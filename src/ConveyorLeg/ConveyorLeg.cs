@@ -55,6 +55,8 @@ public partial class ConveyorLeg : Node3D
 		{
 			grab1.TopLevel = true;
 			grab2.TopLevel = true;
+			grab1.Scale = new Vector3(1f, 1f, 1f);
+			grab2.Scale = new Vector3(1f, 1f, 1f);
 			setGrabsTopLevel = false;
 		}
 
