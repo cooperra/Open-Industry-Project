@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3 uid="uid://bqlkj4ar8q1ws"]
+
+[ext_resource type="Script" path="res://src/ConveyorAssembly.cs" id="1_au6en"]
+[ext_resource type="PackedScene" uid="uid://dm55h6ap605bw" path="res://parts/BeltConveyor.tscn" id="2_kdap4"]
+[ext_resource type="PackedScene" uid="uid://dvjrx5crpqs5f" path="res://parts/SideGuard.tscn" id="3_k3wlu"]
+[ext_resource type="PackedScene" uid="uid://cr8u3bta0skiy" path="res://parts/ConveyorLegBC.tscn" id="4_aq24s"]
+[ext_resource type="Script" path="res://src/ConveyorLeg/ConveyorLeg.cs" id="5_0q0gm"]
+
+[node name="BeltConveyorAssembly" type="Node3D"]
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("1_au6en")
+AutoLegStandsInterval = 2.0
+
+[node name="Conveyors" type="Node3D" parent="."]
+transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="Conveyor" parent="Conveyors" instance=ExtResource("2_kdap4")]
+
+[node name="LeftSide" type="Node3D" parent="."]
+transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="SideGuard" parent="LeftSide" instance=ExtResource("3_k3wlu")]
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="RightSide" type="Node3D" parent="."]
+transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="SideGuard" parent="RightSide" instance=ExtResource("3_k3wlu")]
+transform = Transform3D(-4, 0, 8.74228e-08, 0, 1, 0, -3.49691e-07, 0, -1, 0, 0, 0)
+
+[node name="LegStands" type="Node3D" parent="."]
+transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="LegsStandBC" type="Node3D" parent="LegStands" instance=ExtResource("4_aq24s")]
+transform = Transform3D(1, 0, 0, 0, 1.628, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("5_0q0gm")
+
+[node name="LegsStandBC3" type="Node3D" parent="LegStands" instance=ExtResource("4_aq24s")]
+transform = Transform3D(1, 0, 0, 0, 1.628, 0, 0, 0, 1, -2, 0, 0)
+script = ExtResource("5_0q0gm")
+
+[node name="LegsStandBC4" type="Node3D" parent="LegStands" instance=ExtResource("4_aq24s")]
+transform = Transform3D(1, 0, 0, 0, 1.628, 0, 0, 0, 1, 2, 0, 0)
+script = ExtResource("5_0q0gm")
