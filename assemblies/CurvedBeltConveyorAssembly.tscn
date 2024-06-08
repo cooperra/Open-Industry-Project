@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3 uid="uid://dvpvhht5hn7ww"]
+
+[ext_resource type="Script" path="res://src/CurvedConveyorAssembly.cs" id="1_tp652"]
+[ext_resource type="PackedScene" uid="uid://b2hnylsj67c5m" path="res://parts/ConveorLegCBC.tscn" id="2_ax1m5"]
+[ext_resource type="PackedScene" uid="uid://6vu4cx2v1ltg" path="res://src/Conveyor/CurvedBeltConveyor.tscn" id="3_a54t1"]
+[ext_resource type="PackedScene" uid="uid://b567tts2001h8" path="res://parts/SideGuardCBC.tscn" id="4_3p6hp"]
+[ext_resource type="Script" path="res://src/ConveyorLeg/ConveyorLeg.cs" id="5_iyx3j"]
+
+[node name="CurvedBeltConveyorAssembly" type="Node3D"]
+script = ExtResource("1_tp652")
+AutoLegStandsInterval = 30.0
+AutoLegStandsFixedLegMargin = 15.0
+AutoLegStandsScene = ExtResource("2_ax1m5")
+
+[node name="Conveyors" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.99992, 0)
+
+[node name="ConveyorCorner" parent="Conveyors" instance=ExtResource("3_a54t1")]
+
+[node name="LeftSide" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.99992, 0)
+
+[node name="SideGuardCBC" parent="LeftSide" instance=ExtResource("4_3p6hp")]
+
+[node name="RightSide" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.99992, 0)
+
+[node name="LegStands" type="Node3D" parent="."]
+
+[node name="LegsStandCBC" type="Node3D" parent="LegStands" instance=ExtResource("2_ax1m5")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1.49992, 0, 1, 0, -4.37114e-08, -1.5, 0, -6.55671e-08)
+script = ExtResource("5_iyx3j")
+
+[node name="LegsStandCBC2" type="Node3D" parent="LegStands" instance=ExtResource("2_ax1m5")]
+transform = Transform3D(1, 0, 0, 0, 1.49992, 0, 0, 0, 1, 0, 0, 1.5)
+script = ExtResource("5_iyx3j")
+
+[node name="LegsStandCBC3" type="Node3D" parent="LegStands" instance=ExtResource("2_ax1m5")]
+transform = Transform3D(0.5, 0, -0.866025, 0, 1.49992, 0, 0.866025, 0, 0.5, -1.29904, 0, 0.75)
+script = ExtResource("5_iyx3j")
+
+[node name="LegsStandCBC4" type="Node3D" parent="LegStands" instance=ExtResource("2_ax1m5")]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1.49992, 0, 0.5, 0, 0.866025, -0.75, 0, 1.29904)
+script = ExtResource("5_iyx3j")

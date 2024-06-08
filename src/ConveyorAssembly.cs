@@ -209,8 +209,7 @@ public partial class ConveyorAssembly : Node3D
 			if (legStand == null) {
 				continue;
 			}
-			legStand.Position = new Vector3(legStand.Position.X, legStand.Position.Y, 0f);
-			legStand.Rotation = new Vector3(0f, 0f, legStand.Rotation.Z);
+			SnapToLegStandsPath(legStand);
 			legStand.Scale = new Vector3(1f, legStand.Scale.Y, targetWidth);
 		}
 
@@ -231,7 +230,6 @@ public partial class ConveyorAssembly : Node3D
 			, AutoLegStandsScene != autoLegStandsScenePrev
 			, legStandCoverageMin != legStandCoverageMinPrev
 			, legStandCoverageMax != legStandCoverageMaxPrev);
-			//DeleteUnalignedAutoLegStands();
 			AdjustAutoLegStandPositions();
 			CreateAndRemoveAutoLegStands();
 		}
@@ -253,26 +251,6 @@ public partial class ConveyorAssembly : Node3D
 			}
 		}
 	}
-
-	// private void DeleteUnalignedAutoLegStands() {
-	// 	// Delete auto-placed leg stands that are not aligned to the previous interval.
-	// 	foreach (Node child in legStands.GetChildren()) {
-	// 		ConveyorLeg legStand = child as ConveyorLeg;
-	// 		if (legStand == null) {
-	// 			continue;
-	// 		}
-	// 		// Only delete leg stands that we created.
-	// 		if (legStand.Owner != this) {
-	// 			continue;
-	// 		}
-	// 		bool isOnInterval = true; //Mathf.Abs(legStand.Position.X % autoLegStandsIntervalPrev) <= 0.8f;
-	// 		bool isFrontLeg = AutoLegStandsFixedFrontLeg && legStand.Position.X == legStandCoverageMinPrev;
-	// 		bool isRearLeg = AutoLegStandsFixedRearLeg && legStand.Position.X == legStandCoverageMaxPrev;
-	// 		if (!isOnInterval && !isFrontLeg && !isRearLeg) {
-	// 			legStand.QueueFree();
-	// 		}
-	// 	}
-	// }
 
 	private void AdjustAutoLegStandPositions() {
 		// Don't allow tiny or negative intervals.
@@ -299,11 +277,24 @@ public partial class ConveyorAssembly : Node3D
 				continue;
 			}
 			// Update leg stand position to the new interval.
-			int legStandIndex = (int) Mathf.Round(legStand.Position.X / autoLegStandsIntervalPrev);
-			legStand.Position = new Vector3((float) Math.Round(legStandIndex * AutoLegStandsInterval, ROUNDING_DIGITS), legStand.Position.Y, 0f);
+			int legStandIndex = (int) Mathf.Round(GetPositionOnLegStandsPath(legStand.Position) / autoLegStandsIntervalPrev);
+			MoveLegStandToPathPosition(legStand, (float) Math.Round(legStandIndex * AutoLegStandsInterval, ROUNDING_DIGITS));
 		}
 
 		autoLegStandsIntervalPrev = AutoLegStandsInterval;
+	}
+
+	protected virtual float GetPositionOnLegStandsPath(Vector3 position) {
+		return position.X;
+	}
+
+	protected virtual void MoveLegStandToPathPosition(Node3D legStand, float position) {
+		legStand.Position = new Vector3(position, legStand.Position.Y, 0f);
+		legStand.Rotation = new Vector3(0f, 0f, legStand.Rotation.Z);
+	}
+
+	private void SnapToLegStandsPath(Node3D legStand) {
+		MoveLegStandToPathPosition(legStand, GetPositionOnLegStandsPath(legStand.Position));
 	}
 
 	private void CreateAndRemoveAutoLegStands() {
@@ -335,8 +326,8 @@ public partial class ConveyorAssembly : Node3D
 				continue;
 			}
 			// Ignore existing front and rear legs.
-			var isFrontLeg = AutoLegStandsFixedFrontLeg && legStand.Position.X == legStandCoverageMin;
-			var isRearLeg = AutoLegStandsFixedRearLeg && legStand.Position.X == legStandCoverageMax;
+			var isFrontLeg = AutoLegStandsFixedFrontLeg && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMin;
+			var isRearLeg = AutoLegStandsFixedRearLeg && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMax;
 			if (isFrontLeg || isRearLeg) {
 				hasFrontLeg = hasFrontLeg || isFrontLeg;
 				hasRearLeg = hasRearLeg || isRearLeg;
@@ -344,11 +335,11 @@ public partial class ConveyorAssembly : Node3D
 			}
 			if (AutoLegStandsUseInterval) {
 				// Delete leg stands that are not in the new interval.
-				if (legStand.Position.X < firstPosition || legStand.Position.X > lastPosition) {
+				if (GetPositionOnLegStandsPath(legStand.Position) < firstPosition || GetPositionOnLegStandsPath(legStand.Position) > lastPosition) {
 					legStand.QueueFree();
 				} else {
 					// Store leg stands that are in the new interval.
-					legStandsInventory[(int) Math.Round((legStand.Position.X - firstPosition) / AutoLegStandsInterval)] = legStand;
+					legStandsInventory[(int) Math.Round((GetPositionOnLegStandsPath(legStand.Position) - firstPosition) / AutoLegStandsInterval)] = legStand;
 				}
 			} else {
 				// Delete all interval leg stands if we're not using intervals.
@@ -359,13 +350,13 @@ public partial class ConveyorAssembly : Node3D
 		// Create the missing leg stands.
 		if (!hasFrontLeg && AutoLegStandsFixedFrontLeg) {
 			ConveyorLeg legStand = AutoLegStandsScene.Instantiate() as ConveyorLeg;
-			legStand.Position = new Vector3(legStandCoverageMin, 0f, 0f);
+			MoveLegStandToPathPosition(legStand, legStandCoverageMin);
 			legStands.AddChild(legStand, forceReadableName: true);
 			legStand.Owner = this;
 		}
 		if (!hasRearLeg && AutoLegStandsFixedRearLeg) {
 			ConveyorLeg legStand = AutoLegStandsScene.Instantiate() as ConveyorLeg;
-			legStand.Position = new Vector3(legStandCoverageMax, 0f, 0f);
+			MoveLegStandToPathPosition(legStand, legStandCoverageMax);
 			legStands.AddChild(legStand, forceReadableName: true);
 			legStand.Owner = this;
 		}
@@ -375,7 +366,7 @@ public partial class ConveyorAssembly : Node3D
 		for (int i = 0; i < intervalLegStandCount; i++) {
 			if (legStandsInventory[i] == null) {
 				ConveyorLeg legStand = AutoLegStandsScene.Instantiate() as ConveyorLeg;
-				legStand.Position = new Vector3((float) Math.Round(firstPosition + i * AutoLegStandsInterval, ROUNDING_DIGITS), 0f, 0f);
+				MoveLegStandToPathPosition(legStand, (float) Math.Round(firstPosition + i * AutoLegStandsInterval, ROUNDING_DIGITS));
 				legStands.AddChild(legStand, forceReadableName: true);
 				legStand.Owner = this;
 			}
@@ -390,6 +381,10 @@ public partial class ConveyorAssembly : Node3D
 		}
 		// Plane transformed from conveyors space into legStands space.
 		var hingeOffset = 0.382f; //0.372f;
+		// Hack for curved conveyors
+		if (conveyors.GetChildCount() > 0 && conveyors.GetChildCount() > 0 && conveyors.GetChild(0) is CurvedBeltConveyor) {
+			hingeOffset = 0.5f;
+		}
 		var conveyorPlane = new Plane(Vector3.Up, new Vector3(0f, -hingeOffset, 0f)) * conveyors.Transform.AffineInverse() * legStands.Transform;
 
 		foreach (Node child in legStands.GetChildren()) {
@@ -407,10 +402,10 @@ public partial class ConveyorAssembly : Node3D
 			}
 			float legHeight = ((Vector3) intersection).Y;
 			legStand.Scale = new Vector3(1f, legHeight, legStand.Scale.Z);
-			legStand.GrabsRotation = Mathf.RadToDeg(legStand.Basis.Y.SignedAngleTo(conveyorPlane.Normal, legStand.Basis.Z));
+			legStand.GrabsRotation = Mathf.RadToDeg(legStand.Basis.Y.SignedAngleTo(conveyorPlane.Normal.Slide(legStand.Basis.Z), legStand.Basis.Z));
 			// Only show leg stands that touch a conveyor.
-			var tipPosition = legStand.Position + legStand.Basis.Y;
-			legStand.Visible = legStandCoverageMin <= tipPosition.X && tipPosition.X <= legStandCoverageMax;
+			float tipPosition = GetPositionOnLegStandsPath(legStand.Position + legStand.Basis.Y);
+			legStand.Visible = legStandCoverageMin <= tipPosition && tipPosition <= legStandCoverageMax;
 		}
 	}
 
@@ -479,9 +474,12 @@ public partial class ConveyorAssembly : Node3D
 
 	private void UpdateLegStandCoverage() {
 		(legStandCoverageMinPrev, legStandCoverageMaxPrev) = (legStandCoverageMin, legStandCoverageMax);
+		(legStandCoverageMin, legStandCoverageMax) = GetLegStandCoverage();
+	}
+	
+	protected virtual (float, float) GetLegStandCoverage() {
 		if (legStands == null || conveyors == null) {
-			(legStandCoverageMin, legStandCoverageMax) = (0f, 0f);
-			return;
+			return (0f, 0f);
 		}
 		var min = float.MaxValue;
 		var max = float.MinValue;
@@ -500,7 +498,7 @@ public partial class ConveyorAssembly : Node3D
 			}
 		}
 		// Round to avoid floating point errors.
-		(legStandCoverageMin, legStandCoverageMax) = ((float) Math.Round(min, ROUNDING_DIGITS), (float) Math.Round(max, ROUNDING_DIGITS));
+		return ((float) Math.Round(min, ROUNDING_DIGITS), (float) Math.Round(max, ROUNDING_DIGITS));
 	}
 
 	private static bool IsConveyor(Node node) {
