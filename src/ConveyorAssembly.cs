@@ -4,12 +4,12 @@ using System;
 [Tool]
 public partial class ConveyorAssembly : Node3D
 {
-	const int ROUNDING_DIGITS = 3;
-	Node3D conveyors;
-	Node3D rightSide;
-	Node3D leftSide;
-	Node3D legStands;
-	Transform3D transformPrev;
+	private const int ROUNDING_DIGITS = 3;
+	protected Node3D conveyors;
+	private Node3D rightSide;
+	private Node3D leftSide;
+	protected Node3D legStands;
+	protected Transform3D transformPrev;
 
 	[ExportGroup("Conveyor Automation", "Auto")]
 	[Export]
@@ -22,26 +22,30 @@ public partial class ConveyorAssembly : Node3D
 	public bool AutoLegStandsUseInterval { get; set; } = true;
 	private bool autoLegStandsUseIntervalPrev = false;
 
-	[Export(PropertyHint.None, "suffix:m")]
+	[Export(PropertyHint.Range, "0.5,10,or_greater,suffix:m")] // TODO use _ValidateProperty to override this for the CurvedConveyorAssembly degrees unit
 	public float AutoLegStandsInterval { get; set; } = 2f;
 	private float autoLegStandsIntervalPrev;
+	[Export(PropertyHint.Range, "0,1,or_less,or_greater,suffix:m")]
+	public float AutoLegStandsEndOffset = 0.2f;
 
+	[ExportSubgroup("Fixed Legs", "AutoLegStandsFixed")]
 	[Export]
 	public bool AutoLegStandsFixedFrontLeg = true;
 	private bool autoLegStandsFixedFrontLegPrev = false;
-
-
 	[Export]
 	public bool AutoLegStandsFixedRearLeg = true;
 	private bool autoLegStandsFixedRearLegPrev = false;
-
-	[Export]
+	[Export(PropertyHint.Range, "0.5,5,or_greater,suffix:m")]
 	public float AutoLegStandsFixedLegMargin = 0.5f;
 	private float autoLegStandsFixedLegMarginPrev = 0.5f;
 
+	[ExportSubgroup("Leg Model", "AutoLegStandsModel")]
+	[Export(PropertyHint.None, "suffix:m")]
+	public float AutoLegStandsModelGrabsOffset = 0.382f;
+
 	[Export]
-	public PackedScene AutoLegStandsScene = GD.Load<PackedScene>("res://parts/ConveyorLegBC.tscn");
-	private PackedScene autoLegStandsScenePrev;
+	public PackedScene AutoLegStandsModelScene = GD.Load<PackedScene>("res://parts/ConveyorLegBC.tscn");
+	private PackedScene autoLegStandsModelScenePrev;
 
 	private float legStandCoverageMin;
 	private float legStandCoverageMax;
@@ -51,12 +55,12 @@ public partial class ConveyorAssembly : Node3D
 	public override void _Ready()
 	{
 		conveyors = GetNode<Node3D>("Conveyors");
-		rightSide = GetNode<Node3D>("RightSide");
-		leftSide = GetNode<Node3D>("LeftSide");
-		legStands = GetNode<Node3D>("LegStands");
+		rightSide = GetNodeOrNull<Node3D>("RightSide");
+		leftSide = GetNodeOrNull<Node3D>("LeftSide");
+		legStands = GetNodeOrNull<Node3D>("LegStands");
 		transformPrev = this.Transform;
 		autoLegStandsIntervalPrev = AutoLegStandsInterval;
-		autoLegStandsScenePrev = AutoLegStandsScene;
+		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
 		UpdateLegStandCoverage();
 		// All existing leg stands that we own must be regenerated. We can't trust them remain correct.
 		DeleteSelfOwnedLegStands();
@@ -67,6 +71,7 @@ public partial class ConveyorAssembly : Node3D
 		if (GetChildCount() == 0){
 			SetupDefaultChildren();
 		}
+		ApplyAssemblyScaleConstraints();
 		PreventAllChildScaling();
 		UpdateConveyors();
 		UpdateSides();
@@ -77,7 +82,7 @@ public partial class ConveyorAssembly : Node3D
 		autoLegStandsFixedFrontLegPrev = AutoLegStandsFixedFrontLeg;
 		autoLegStandsFixedRearLegPrev = AutoLegStandsFixedRearLeg;
 		autoLegStandsFixedLegMarginPrev = AutoLegStandsFixedLegMargin;
-		autoLegStandsScenePrev = AutoLegStandsScene;
+		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
 	}
 
 	private void SetupDefaultChildren()
@@ -113,6 +118,12 @@ public partial class ConveyorAssembly : Node3D
 		GD.Print("Default children created.");
 	}
 
+	protected virtual void ApplyAssemblyScaleConstraints()
+	{
+		// There are no constraints for this assembly.
+		// This is where one would lock scale components equal to each other or a constant value, for example.
+	}
+
 	private void UpdateConveyors()
 	{
 		if (conveyors == null)
@@ -120,26 +131,32 @@ public partial class ConveyorAssembly : Node3D
 			return;
 		}
 
-		// Lock Z position
-		conveyors.Position = new Vector3(conveyors.Position.X, conveyors.Position.Y, 0f);
-		// Lock X and Y rotation
-		if (conveyors.Rotation.X > 0.001f || conveyors.Rotation.X < -0.001f || conveyors.Rotation.Y > 0.001f || conveyors.Rotation.Y < -0.001) {
-			// This seems to mess up scale, but at least that's fixed on the next frame.
-			conveyors.Rotation = new Vector3(0f, 0f, conveyors.Rotation.Z);
-		}
+		LockConveyorsGroup();
+
 		var conveyorLineLength = GetConveyorLineLength();
 		// TODO enact a scheme where conveyors are scaled proportionally to the each other. (But there is that factor where the tips will overlap... Better than nothing!)
 
 		foreach (Node child in conveyors.GetChildren()) {
-			Node3D conveyor = child as Node3D;
-			if (IsConveyor(conveyor)) {
-				if (AutoScaleConveyors) {
-					conveyor.Scale = new Vector3(conveyorLineLength, 1f, this.Scale.Z);
-				} else {
-					// Always scale width.
-					conveyor.Scale = new Vector3(conveyor.Scale.X, conveyor.Scale.Y, this.Scale.Z);
-				}
+			Node3D child3d = child as Node3D;
+			if (IsConveyor(child3d)) {
+				ScaleConveyor(child3d, conveyorLineLength);
 			}
+			if (IsSideGuard(child3d)) {
+				ScaleSideGuard(child3d, conveyorLineLength);
+			}
+		}
+	}
+
+	private bool IsSideGuard(Node node) {
+		return node as SideGuard != null || node as SideGuardCBC != null;
+	}
+
+	protected virtual void ScaleConveyor(Node3D conveyor, float conveyorLineLength) {
+		if (AutoScaleConveyors) {
+			conveyor.Scale = new Vector3(conveyorLineLength, 1f, this.Scale.Z);
+		} else {
+			// Always scale width.
+			conveyor.Scale = new Vector3(conveyor.Scale.X, conveyor.Scale.Y, this.Scale.Z);
 		}
 	}
 
@@ -173,9 +190,15 @@ public partial class ConveyorAssembly : Node3D
 			}
 			// TODO scale x position of all items here
 			// TODO proportional scaling of the guards
-			if (guard as SideGuard != null) {
-				guard.Scale = new Vector3(conveyorLineLength, 1f, 1f);
+			if (IsSideGuard(guard)) {
+				ScaleSideGuard(guard, conveyorLineLength);
 			}
+		}
+	}
+
+	protected virtual void ScaleSideGuard(Node3D guard, float conveyorLineLength) {
+		if (AutoScaleGuards) {
+			guard.Scale = new Vector3(conveyorLineLength, 1f, 1f);
 		}
 	}
 
@@ -186,24 +209,15 @@ public partial class ConveyorAssembly : Node3D
 			return;
 		}
 
-		// Always align LegStands group with Conveyors group.
-		if (conveyors != null) {
-			legStands.Position = new Vector3(legStands.Position.X, legStands.Position.Y, conveyors.Position.Z);
-			// TODO rotation is funky now
-			legStands.Rotation = new Vector3(0f, conveyors.Rotation.Y, 0f);
-		}
+		LockLegStandsGroup();
 
 		// If the leg stand scene changes, we need to regenerate everything.
-		if (AutoLegStandsScene != autoLegStandsScenePrev) {
+		if (AutoLegStandsModelScene != autoLegStandsModelScenePrev) {
 			DeleteSelfOwnedLegStands();
 		}
 
 		// Force legStand alignment with LegStands group.
-		// This is a hack to account for the fact that rolling conveyors are slightly wider than belt conveyors.
-		float targetWidth = this.Scale.Z;
-		if (conveyors != null && conveyors.GetChildCount() > 0 && conveyors.GetChild(0) is RollerConveyor) {
-			targetWidth = this.Scale.Z * 1.055f;
-		}
+		float targetWidth = GetLegStandTargetWitdh();
 		foreach (Node child in legStands.GetChildren()) {
 			ConveyorLeg legStand = child as ConveyorLeg;
 			if (legStand == null) {
@@ -218,22 +232,56 @@ public partial class ConveyorAssembly : Node3D
 			|| AutoLegStandsFixedFrontLeg != autoLegStandsFixedFrontLegPrev
 			|| AutoLegStandsFixedRearLeg != autoLegStandsFixedRearLegPrev
 			|| AutoLegStandsFixedLegMargin != autoLegStandsFixedLegMarginPrev
-			|| AutoLegStandsScene != autoLegStandsScenePrev
+			|| AutoLegStandsModelScene != autoLegStandsModelScenePrev
 			|| legStandCoverageMin != legStandCoverageMinPrev
 			|| legStandCoverageMax != legStandCoverageMaxPrev;
 		if (autoLegStandsUpdateIsNeeded) {
-			GD.Print("Updating leg stands. Reason: ", AutoLegStandsUseInterval != autoLegStandsUseIntervalPrev
-			, AutoLegStandsInterval != autoLegStandsIntervalPrev
-			, AutoLegStandsFixedFrontLeg != autoLegStandsFixedFrontLegPrev
-			, AutoLegStandsFixedRearLeg != autoLegStandsFixedRearLegPrev
-			, AutoLegStandsFixedLegMargin != autoLegStandsFixedLegMarginPrev
-			, AutoLegStandsScene != autoLegStandsScenePrev
-			, legStandCoverageMin != legStandCoverageMinPrev
-			, legStandCoverageMax != legStandCoverageMaxPrev);
+			// GD.Print("Updating leg stands. Reason: ", AutoLegStandsUseInterval != autoLegStandsUseIntervalPrev
+			// , AutoLegStandsInterval != autoLegStandsIntervalPrev
+			// , AutoLegStandsFixedFrontLeg != autoLegStandsFixedFrontLegPrev
+			// , AutoLegStandsFixedRearLeg != autoLegStandsFixedRearLegPrev
+			// , AutoLegStandsFixedLegMargin != autoLegStandsFixedLegMarginPrev
+			// , AutoLegStandsModelScene != autoLegStandsModelScenePrev
+			// , legStandCoverageMin != legStandCoverageMinPrev
+			// , legStandCoverageMax != legStandCoverageMaxPrev);
 			AdjustAutoLegStandPositions();
 			CreateAndRemoveAutoLegStands();
 		}
 		UpdateLegStandsHeightAndVisibility();
+	}
+
+	private float GetLegStandTargetWitdh() {
+		Node3D firstConveyor = null;
+		foreach (Node child in conveyors.GetChildren()) {
+			Node3D conveyor = child as Node3D;
+			if (IsConveyor(conveyor)) {
+				firstConveyor = conveyor;
+				break;
+			}
+		}
+		// This is a hack to account for the fact that rolling conveyors are slightly wider than belt conveyors.
+		if (firstConveyor is RollerConveyor || firstConveyor is CurvedRollerConveyor) {
+			return this.Scale.Z * 1.055f;
+		}
+		return this.Scale.Z;
+	}
+
+	protected virtual void LockConveyorsGroup() {
+		// Lock Z position
+		conveyors.Position = new Vector3(conveyors.Position.X, conveyors.Position.Y, 0f);
+		// Lock X and Y rotation
+		if (conveyors.Rotation.X > 0.001f || conveyors.Rotation.X < -0.001f || conveyors.Rotation.Y > 0.001f || conveyors.Rotation.Y < -0.001) {
+			// This seems to mess up scale, but at least that's fixed on the next frame.
+			conveyors.Rotation = new Vector3(0f, 0f, conveyors.Rotation.Z);
+		}
+	}
+	protected virtual void LockLegStandsGroup() {
+		// Always align LegStands group with Conveyors group.
+		if (conveyors != null) {
+			legStands.Position = new Vector3(legStands.Position.X, legStands.Position.Y, conveyors.Position.Z);
+			// TODO rotation is funky now
+			legStands.Rotation = new Vector3(0f, conveyors.Rotation.Y, 0f);
+		}
 	}
 
 	private void DeleteSelfOwnedLegStands() {
@@ -348,14 +396,17 @@ public partial class ConveyorAssembly : Node3D
 		}
 
 		// Create the missing leg stands.
+		if (AutoLegStandsModelScene == null) {
+			return;
+		}
 		if (!hasFrontLeg && AutoLegStandsFixedFrontLeg) {
-			ConveyorLeg legStand = AutoLegStandsScene.Instantiate() as ConveyorLeg;
+			ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
 			MoveLegStandToPathPosition(legStand, legStandCoverageMin);
 			legStands.AddChild(legStand, forceReadableName: true);
 			legStand.Owner = this;
 		}
 		if (!hasRearLeg && AutoLegStandsFixedRearLeg) {
-			ConveyorLeg legStand = AutoLegStandsScene.Instantiate() as ConveyorLeg;
+			ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
 			MoveLegStandToPathPosition(legStand, legStandCoverageMax);
 			legStands.AddChild(legStand, forceReadableName: true);
 			legStand.Owner = this;
@@ -365,7 +416,7 @@ public partial class ConveyorAssembly : Node3D
 		}
 		for (int i = 0; i < intervalLegStandCount; i++) {
 			if (legStandsInventory[i] == null) {
-				ConveyorLeg legStand = AutoLegStandsScene.Instantiate() as ConveyorLeg;
+				ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
 				MoveLegStandToPathPosition(legStand, (float) Math.Round(firstPosition + i * AutoLegStandsInterval, ROUNDING_DIGITS));
 				legStands.AddChild(legStand, forceReadableName: true);
 				legStand.Owner = this;
@@ -380,12 +431,7 @@ public partial class ConveyorAssembly : Node3D
 			return;
 		}
 		// Plane transformed from conveyors space into legStands space.
-		var hingeOffset = 0.382f; //0.372f;
-		// Hack for curved conveyors
-		if (conveyors.GetChildCount() > 0 && conveyors.GetChildCount() > 0 && conveyors.GetChild(0) is CurvedBeltConveyor) {
-			hingeOffset = 0.5f;
-		}
-		var conveyorPlane = new Plane(Vector3.Up, new Vector3(0f, -hingeOffset, 0f)) * conveyors.Transform.AffineInverse() * legStands.Transform;
+		var conveyorPlane = new Plane(Vector3.Up, new Vector3(0f, -AutoLegStandsModelGrabsOffset, 0f)) * conveyors.Transform.AffineInverse() * legStands.Transform;
 
 		foreach (Node child in legStands.GetChildren()) {
 			ConveyorLeg legStand = child as ConveyorLeg;
@@ -476,7 +522,7 @@ public partial class ConveyorAssembly : Node3D
 		(legStandCoverageMinPrev, legStandCoverageMaxPrev) = (legStandCoverageMin, legStandCoverageMax);
 		(legStandCoverageMin, legStandCoverageMax) = GetLegStandCoverage();
 	}
-	
+
 	protected virtual (float, float) GetLegStandCoverage() {
 		if (legStands == null || conveyors == null) {
 			return (0f, 0f);
@@ -489,9 +535,8 @@ public partial class ConveyorAssembly : Node3D
 				// Get the conveyor's Transform in the legStands space.
 				Transform3D localConveyorTransform = legStands.Transform.AffineInverse() * conveyors.Transform * conveyor.Transform;
 				// Get the X extents of the conveyor in the legStands space.
-				// Assume X scale is equal to length, so at scale 1, half the length is 0.5.
-				Vector3 conveyorExtent1 = localConveyorTransform * new Vector3(0.5f, 0f, 0f);
-				Vector3 conveyorExtent2 = localConveyorTransform * new Vector3(-0.5f, 0f, 0f);
+				Vector3 conveyorExtent1 = localConveyorTransform.Orthonormalized() * new Vector3(-Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) + AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
+				Vector3 conveyorExtent2 = localConveyorTransform.Orthonormalized() * new Vector3(Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) - AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
 				// Update min and max.
 				min = Mathf.Min(min, Mathf.Min(conveyorExtent2.X, conveyorExtent1.X));
 				max = Mathf.Max(max, Mathf.Max(conveyorExtent2.X, conveyorExtent1.X));
@@ -502,6 +547,6 @@ public partial class ConveyorAssembly : Node3D
 	}
 
 	private static bool IsConveyor(Node node) {
-		return node as IConveyor != null || node as RollerConveyor != null;
+		return node as IConveyor != null || node as RollerConveyor != null || node as CurvedRollerConveyor != null;
 	}
 }

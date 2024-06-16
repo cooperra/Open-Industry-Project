@@ -4,6 +4,106 @@ using System;
 [Tool]
 public partial class CurvedConveyorAssembly : ConveyorAssembly
 {
+	public CurvedConveyorAssembly() {
+		// Override default values for AutoLegStands properties.
+		AutoLegStandsUseInterval = false;
+		AutoLegStandsInterval = 15f;
+		AutoLegStandsEndOffset = 0f;
+		AutoLegStandsFixedLegMargin = 0f;
+		AutoLegStandsModelGrabsOffset = 0.5f;
+		AutoLegStandsModelScene = GD.Load<PackedScene>("res://parts/ConveyorLegCBC.tscn");
+	}
+
+	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
+		// Hide unused properties.
+		if (property["name"].AsStringName() == PropertyName.AutoScaleConveyors
+			|| property["name"].AsStringName() == PropertyName.AutoScaleGuards) {
+			property["usage"] = (int) PropertyUsageFlags.NoEditor;
+		}
+		// This is a hack to change the unit of AutoLegStandsInterval to degrees in the inspector.
+		if (property["name"].AsStringName() == PropertyName.AutoLegStandsInterval) {
+			property["hint"] = (int) PropertyHint.Range;
+			property["hint_string"] = "5,90,1,degrees";
+		}
+		// This is a hack to change the unit of AutoLegStandsEndOffset to degrees in the inspector.
+		if (property["name"].AsStringName() == PropertyName.AutoLegStandsEndOffset) {
+			property["hint"] = (int) PropertyHint.Range;
+			property["hint_string"] = "0,90,1,degrees";
+		}
+		// This is a hack to change the unit of AutoLegStandsFixedLegMargin to degrees in the inspector.
+		if (property["name"].AsStringName() == PropertyName.AutoLegStandsFixedLegMargin) {
+			property["hint"] = (int) PropertyHint.Range;
+			property["hint_string"] = "0,90,1,degrees";
+		}
+	}
+
+	public override bool _PropertyCanRevert(StringName property) {
+		// This is a hack to enable overriding the default value of these properties.
+		return property == PropertyName.AutoLegStandsUseInterval
+			|| property == PropertyName.AutoLegStandsInterval
+			|| property == PropertyName.AutoLegStandsEndOffset
+			|| property == PropertyName.AutoLegStandsFixedLegMargin
+			|| property == PropertyName.AutoLegStandsModelGrabsOffset
+			|| property == PropertyName.AutoLegStandsModelScene
+			|| base._PropertyCanRevert(property);
+	}
+
+	public override Variant _PropertyGetRevert(StringName property) {
+		// This is a hack to override the default value of AutoLegStandsUseInterval.
+		if (property == PropertyName.AutoLegStandsUseInterval) {
+			return false;
+		}
+		// This is a hack to override the default value of AutoLegStandsInterval.
+		if (property == PropertyName.AutoLegStandsInterval) {
+			return 15f;
+		}
+		// This is a hack to override the default value of AutoLegStandsEndOffset.
+		if (property == PropertyName.AutoLegStandsEndOffset) {
+			return 0f;
+		}
+		// This is a hack to override the default value of AutoLegStandsFixedLegMargin.
+		if (property == PropertyName.AutoLegStandsFixedLegMargin) {
+			return 0f;
+		}
+		// This is a hack to override the default value of AutoLegStandsModelGrabsOffset.
+		if (property == PropertyName.AutoLegStandsModelGrabsOffset) {
+			return 0.5f;
+		}
+		// This is a hack to override the default value of AutoLegStandsModelScene.
+		if (property == PropertyName.AutoLegStandsModelScene) {
+			return GD.Load<PackedScene>("res://parts/ConveyorLegCBC.tscn");
+		}
+		return base._PropertyGetRevert(property);
+	}
+
+	protected override void ApplyAssemblyScaleConstraints() {
+		// // Lock X and Z scale to be the same.
+		// // This allows the user to adjust either scale handle for the same effect.
+		// // Use whichever one has been changed most recently or X if both have changed.
+		// (var x, var y, var z) = this.Transform.Basis.Scale;
+		// if (x != z) {
+		// 	if (x != this.transformPrev.Basis.Scale.X) {
+		// 		//this.Transform.Basis.Scale = new Vector3(x, y, x);
+		// 		Basis bar = this.Transform.Basis.Orthonormalized();
+		// 		bar = new Basis(bar.X * x, bar.Y * y, bar.Z * x);
+		// 		this.Transform = new Transform3D(bar, this.Transform.Origin);
+		// 	} else if (z != this.transformPrev.Basis.Scale.Z){
+		// 		//this.Transform.Basis.Scale = new Vector3(z, y, z);
+		// 		Basis bar = this.Transform.Basis.Orthonormalized();
+		// 		bar = new Basis(bar.X * z, bar.Y * y, bar.Z * z);
+		// 		this.Transform = new Transform3D(bar, this.Transform.Origin);
+		// 	}
+		// }
+
+		// Lock Z scale to be the same as X scale.
+		(var scaleX, var scaleY, var scaleZ) = this.Transform.Basis.Scale;
+		if (scaleX != scaleZ) {
+			Basis rotBasis = this.Transform.Basis.Orthonormalized();
+			rotBasis = new Basis(rotBasis.X * scaleX, rotBasis.Y * scaleY, rotBasis.Z * scaleX);
+			this.Transform = new Transform3D(rotBasis, this.Transform.Origin);
+		}
+	}
+
 	protected override float GetPositionOnLegStandsPath(Vector3 position) {
 		return (float) Math.Round(Mathf.RadToDeg(new Vector3(0, 0, 1).SignedAngleTo(position.Slide(Vector3.Up), Vector3.Up)));
 	}
@@ -17,6 +117,28 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 
 	protected override (float, float) GetLegStandCoverage() {
 		// TODO account for rotation between legStands and conveyors
-		return (-90f, 0f);
+		return (-90f + AutoLegStandsEndOffset, 0f - AutoLegStandsEndOffset);
+	}
+
+	protected override void LockConveyorsGroup() {
+		// Just don't let it move at all, except Y axis translation.;
+		conveyors.Rotation = new Vector3(0, 0, 0);
+		conveyors.Position = new Vector3(0, conveyors.Position.Y, 0);
+	}
+
+	protected override void ScaleConveyor(Node3D conveyor, float conveyorLineLength) {
+		// AutoScaleConveyors and conveyorLineLength have no effect on curved conveyors.
+		conveyor.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
+	}
+
+	protected override void ScaleSideGuard(Node3D guard, float conveyorLineLength) {
+		// AutoScaleGuards and conveyorLineLength have no effect on curved side guards.
+		guard.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
+	}
+	protected override void LockLegStandsGroup() {
+		// We should probably let this rotate around the Y axis, but that would require accounting for that rotation in GetLegStandsCoverage().
+		// For now, we won't let it move at all except Y axis translation.
+		legStands.Rotation = new Vector3(0, 0, 0);
+		legStands.Position = new Vector3(0, legStands.Position.Y, 0);
 	}
 }
