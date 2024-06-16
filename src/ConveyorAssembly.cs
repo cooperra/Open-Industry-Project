@@ -63,6 +63,8 @@ public partial class ConveyorAssembly : Node3D
 		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
 		UpdateLegStandCoverage();
 		// All existing leg stands that we own must be regenerated. We can't trust them remain correct.
+		// ^ The above claim might not be true now that we SetEditableInstance(legStand, true) on all our leg stands.
+		// Still, deleting all the leg stands is safer until we're certain that there won't be issues.
 		DeleteSelfOwnedLegStands();
 	}
 
@@ -139,9 +141,11 @@ public partial class ConveyorAssembly : Node3D
 		foreach (Node child in conveyors.GetChildren()) {
 			Node3D child3d = child as Node3D;
 			if (IsConveyor(child3d)) {
+				SetEditableInstance(child3d, true);
 				ScaleConveyor(child3d, conveyorLineLength);
 			}
 			if (IsSideGuard(child3d)) {
+				SetEditableInstance(child3d, true);
 				ScaleSideGuard(child3d, conveyorLineLength);
 			}
 		}
@@ -191,6 +195,7 @@ public partial class ConveyorAssembly : Node3D
 			// TODO scale x position of all items here
 			// TODO proportional scaling of the guards
 			if (IsSideGuard(guard)) {
+				SetEditableInstance(guard, true);
 				ScaleSideGuard(guard, conveyorLineLength);
 			}
 		}
@@ -438,6 +443,9 @@ public partial class ConveyorAssembly : Node3D
 			if (legStand == null) {
 				continue;
 			}
+			// Persist legStand changes into the Assembly's PackedScene.
+			// Fixes ugly previews in the editor.
+			SetEditableInstance(legStand, true);
 			// Raycast from the minimum-height tip of the leg stand to the conveyor plane.
 			var intersection = conveyorPlane.IntersectsRay(legStand.Position + legStand.Basis.Y.Normalized(), legStand.Basis.Y.Normalized());
 			if (intersection == null) {
