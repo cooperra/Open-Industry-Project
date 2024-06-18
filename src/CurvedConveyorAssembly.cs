@@ -104,22 +104,6 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		}
 	}
 
-	protected override float GetPositionOnLegStandsPath(Vector3 position) {
-		return (float) Math.Round(Mathf.RadToDeg(new Vector3(0, 0, 1).SignedAngleTo(position.Slide(Vector3.Up), Vector3.Up)));
-	}
-
-	protected override void MoveLegStandToPathPosition(Node3D legStand, float position) {
-		float radius = this.Scale.X * 1.5f;
-		float angle = Mathf.DegToRad(position);
-		legStand.Position = new Vector3(0, legStand.Position.Y, radius).Rotated(Vector3.Up, angle);
-		legStand.Rotation = new Vector3(0f, angle, legStand.Rotation.Z);
-	}
-
-	protected override (float, float) GetLegStandCoverage() {
-		// TODO account for rotation between legStands and conveyors
-		return (-90f + AutoLegStandsEndOffset, 0f - AutoLegStandsEndOffset);
-	}
-
 	protected override void LockConveyorsGroup() {
 		// Just don't let it move at all, except Y axis translation.;
 		conveyors.Rotation = new Vector3(0, 0, 0);
@@ -135,10 +119,26 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		// AutoScaleGuards and conveyorLineLength have no effect on curved side guards.
 		guard.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
 	}
+
+	protected override (float, float) GetLegStandCoverage() {
+		// TODO account for rotation between legStands and conveyors
+		return (-90f + AutoLegStandsEndOffset, 0f - AutoLegStandsEndOffset);
+	}
 	protected override void LockLegStandsGroup() {
 		// We should probably let this rotate around the Y axis, but that would require accounting for that rotation in GetLegStandsCoverage().
 		// For now, we won't let it move at all except Y axis translation.
 		legStands.Rotation = new Vector3(0, 0, 0);
 		legStands.Position = new Vector3(0, legStands.Position.Y, 0);
+	}
+
+	protected override float GetPositionOnLegStandsPath(Vector3 position) {
+		return (float) Math.Round(Mathf.RadToDeg(new Vector3(0, 0, 1).SignedAngleTo(position.Slide(Vector3.Up), Vector3.Up)));
+	}
+
+	protected override void MoveLegStandToPathPosition(Node3D legStand, float position) {
+		float radius = this.Scale.X * 1.5f;
+		float angle = Mathf.DegToRad(position);
+		legStand.Position = new Vector3(0, legStand.Position.Y, radius).Rotated(Vector3.Up, angle);
+		legStand.Rotation = new Vector3(0f, angle, legStand.Rotation.Z);
 	}
 }
