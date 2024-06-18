@@ -32,12 +32,10 @@ public partial class ConveyorLeg : Node3D
 	LegBars legsBars;
 	Node3D ends;
 
-	bool setGrabsTopLevel = true;
-
 	public override void _Ready()
 	{
-		grab1 = GetNode<MeshInstance3D>("LegsGrab1");
-		grab2 = GetNode<MeshInstance3D>("LegsGrab2");
+		grab1 = GetNode<MeshInstance3D>("Ends/LegsTop1/LegsGrab1");
+		grab2 = GetNode<MeshInstance3D>("Ends/LegsTop2/LegsGrab2");
 
 		legsSidesMesh1 = GetNode<MeshInstance3D>("Sides/LegsSide1");
 		legsSidesMesh2 = GetNode<MeshInstance3D>("Sides/LegsSide2");
@@ -51,15 +49,6 @@ public partial class ConveyorLeg : Node3D
 
 	public override void _PhysicsProcess(double delta)
 	{
-		if (setGrabsTopLevel)
-		{
-			grab1.TopLevel = true;
-			grab2.TopLevel = true;
-			grab1.Scale = new Vector3(1f, 1f, 1f);
-			grab2.Scale = new Vector3(1f, 1f, 1f);
-			setGrabsTopLevel = false;
-		}
-
 		if (Scale.Y >= 1.0f)
 			nodeScaleY = Scale.Y;
 		if (Scale.Z >= 1.0f)
