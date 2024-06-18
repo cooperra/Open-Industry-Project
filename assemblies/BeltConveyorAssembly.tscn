@@ -416,26 +416,22 @@ mesh = SubResource("ArrayMesh_w7wrf")
 skeleton = NodePath("")
 script = ExtResource("13_enmi1")
 
-[node name="LegsGrab1" parent="LegStands/LegsStandBC" index="2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 1.61792, -1)
-top_level = true
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
-
-[node name="LegsGrab2" parent="LegStands/LegsStandBC" index="3"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -1.8, 1.61792, 1)
-top_level = true
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
-
 [node name="LegsTop1" parent="LegStands/LegsStandBC/Ends" index="0"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 1, -1)
 mesh = ExtResource("15_6gq3u")
 skeleton = NodePath("")
 
+[node name="LegsGrab1" parent="LegStands/LegsStandBC/Ends/LegsTop1" index="0"]
+mesh = ExtResource("14_mcxca")
+skeleton = NodePath("")
+
 [node name="LegsTop2" parent="LegStands/LegsStandBC/Ends" index="1"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 1, 1)
 mesh = ExtResource("15_6gq3u")
+skeleton = NodePath("")
+
+[node name="LegsGrab2" parent="LegStands/LegsStandBC/Ends/LegsTop2" index="0"]
+mesh = ExtResource("14_mcxca")
 skeleton = NodePath("")
 
 [node name="LegsBottom1" parent="LegStands/LegsStandBC/Ends" index="2"]
@@ -474,26 +470,22 @@ mesh = SubResource("ArrayMesh_vpa4b")
 skeleton = NodePath("")
 script = ExtResource("13_enmi1")
 
-[node name="LegsGrab1" parent="LegStands/LegsStandBC2" index="2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 1.61792, -1)
-top_level = true
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
-
-[node name="LegsGrab2" parent="LegStands/LegsStandBC2" index="3"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 1.8, 1.61792, 1)
-top_level = true
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
-
 [node name="LegsTop1" parent="LegStands/LegsStandBC2/Ends" index="0"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 1, -1)
 mesh = ExtResource("15_6gq3u")
 skeleton = NodePath("")
 
+[node name="LegsGrab1" parent="LegStands/LegsStandBC2/Ends/LegsTop1" index="0"]
+mesh = ExtResource("14_mcxca")
+skeleton = NodePath("")
+
 [node name="LegsTop2" parent="LegStands/LegsStandBC2/Ends" index="1"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 1, 1)
 mesh = ExtResource("15_6gq3u")
+skeleton = NodePath("")
+
+[node name="LegsGrab2" parent="LegStands/LegsStandBC2/Ends/LegsTop2" index="0"]
+mesh = ExtResource("14_mcxca")
 skeleton = NodePath("")
 
 [node name="LegsBottom1" parent="LegStands/LegsStandBC2/Ends" index="2"]
@@ -532,26 +524,22 @@ mesh = SubResource("ArrayMesh_xpwmt")
 skeleton = NodePath("")
 script = ExtResource("13_enmi1")
 
-[node name="LegsGrab1" parent="LegStands/LegsStandBC3" index="2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.61792, -1)
-top_level = true
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
-
-[node name="LegsGrab2" parent="LegStands/LegsStandBC3" index="3"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.61792, 1)
-top_level = true
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
-
 [node name="LegsTop1" parent="LegStands/LegsStandBC3/Ends" index="0"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 1, -1)
 mesh = ExtResource("15_6gq3u")
 skeleton = NodePath("")
 
+[node name="LegsGrab1" parent="LegStands/LegsStandBC3/Ends/LegsTop1" index="0"]
+mesh = ExtResource("14_mcxca")
+skeleton = NodePath("")
+
 [node name="LegsTop2" parent="LegStands/LegsStandBC3/Ends" index="1"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 1, 1)
 mesh = ExtResource("15_6gq3u")
+skeleton = NodePath("")
+
+[node name="LegsGrab2" parent="LegStands/LegsStandBC3/Ends/LegsTop2" index="0"]
+mesh = ExtResource("14_mcxca")
 skeleton = NodePath("")
 
 [node name="LegsBottom1" parent="LegStands/LegsStandBC3/Ends" index="2"]
