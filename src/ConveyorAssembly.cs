@@ -126,6 +126,47 @@ public partial class ConveyorAssembly : Node3D
 		// This is where one would lock scale components equal to each other or a constant value, for example.
 	}
 
+	private void PreventAllChildScaling() {
+		foreach (Node3D child in GetChildren()) {
+			Node3D child3D = child as Node3D;
+			if (child3D != null) {
+				PreventChildScaling(child3D);
+			}
+		}
+	}
+
+	/**
+	 * Counteract the scaling of child nodes as the parent node scales.
+	 *
+	 * This is a hack to allow us to handle grandchildren scale manually.
+	 *
+	 * Child nodes will appear not to scale, but actually, scale inversely to the parent.
+	 * Parent scale will still affect the child's position, but not its apparent rotation.
+	 *
+	 * @param child The child node to prevent scaling.
+	 */
+	private void PreventChildScaling(Node3D child) {
+		var basisRotation = this.Transform.Basis.Orthonormalized();
+		var basisScale = basisRotation.Inverse() * this.Transform.Basis;
+		var xformScaleInverse = new Transform3D(basisScale, new Vector3(0, 0, 0)).AffineInverse();
+
+		var basisRotationPrev = transformPrev.Basis.Orthonormalized();
+		var basisScalePrev = basisRotationPrev.Inverse() * transformPrev.Basis;
+		var xformScalePrev = new Transform3D(basisScalePrev, new Vector3(0, 0, 0));
+
+		// The child transform without the effects of the parent's scale.
+		var childTransformUnscaled = xformScalePrev * child.Transform;
+
+		// Remove any remaining scale. This effectively locks child's scale to (1, 1, 1).
+		childTransformUnscaled.Basis = childTransformUnscaled.Basis.Orthonormalized();
+
+		// Adjust child's position with changes in the parent's scale.
+		childTransformUnscaled.Origin *= basisScalePrev.Inverse() * basisScale;
+
+		// Reapply inverse parent scaling to child.
+		child.Transform = xformScaleInverse * childTransformUnscaled;
+	}
+
 	private void UpdateConveyors()
 	{
 		if (conveyors == null)
@@ -151,6 +192,41 @@ public partial class ConveyorAssembly : Node3D
 		}
 	}
 
+	protected virtual void LockConveyorsGroup() {
+		// Lock Z position
+		conveyors.Position = new Vector3(conveyors.Position.X, conveyors.Position.Y, 0f);
+		// Lock X and Y rotation
+		if (conveyors.Rotation.X > 0.001f || conveyors.Rotation.X < -0.001f || conveyors.Rotation.Y > 0.001f || conveyors.Rotation.Y < -0.001) {
+			// This seems to mess up scale, but at least that's fixed on the next frame.
+			conveyors.Rotation = new Vector3(0f, 0f, conveyors.Rotation.Z);
+		}
+	}
+
+	private float GetConveyorLineLength() {
+		if (conveyors == null) {
+			return this.Scale.X;
+		}
+		if (AutoScaleConveyors) {
+			var cos = Mathf.Cos(conveyors.Basis.GetEuler().Z);
+			return this.Scale.X * 1 / (Mathf.Abs(cos) >= 0.01f ? cos : 0.01f);
+		}
+		// Add up the length of all conveyors.
+		// Assume all conveyors are aligned end-to-end.
+		var sum = 0f;
+		foreach (Node child in conveyors.GetChildren()) {
+			Node3D conveyor = child as Node3D;
+			if (IsConveyor(conveyor)) {
+				// Assume conveyor scale == length.
+				sum += conveyor.Scale.X;
+			}
+		}
+		return sum;
+	}
+
+	private static bool IsConveyor(Node node) {
+		return node as IConveyor != null || node as RollerConveyor != null || node as CurvedRollerConveyor != null;
+	}
+
 	private bool IsSideGuard(Node node) {
 		return node as SideGuard != null || node as SideGuardCBC != null;
 	}
@@ -161,6 +237,12 @@ public partial class ConveyorAssembly : Node3D
 		} else {
 			// Always scale width.
 			conveyor.Scale = new Vector3(conveyor.Scale.X, conveyor.Scale.Y, this.Scale.Z);
+		}
+	}
+
+	protected virtual void ScaleSideGuard(Node3D guard, float conveyorLineLength) {
+		if (AutoScaleGuards) {
+			guard.Scale = new Vector3(conveyorLineLength, 1f, 1f);
 		}
 	}
 
@@ -201,10 +283,32 @@ public partial class ConveyorAssembly : Node3D
 		}
 	}
 
-	protected virtual void ScaleSideGuard(Node3D guard, float conveyorLineLength) {
-		if (AutoScaleGuards) {
-			guard.Scale = new Vector3(conveyorLineLength, 1f, 1f);
+	private void UpdateLegStandCoverage() {
+		(legStandCoverageMinPrev, legStandCoverageMaxPrev) = (legStandCoverageMin, legStandCoverageMax);
+		(legStandCoverageMin, legStandCoverageMax) = GetLegStandCoverage();
+	}
+
+	protected virtual (float, float) GetLegStandCoverage() {
+		if (legStands == null || conveyors == null) {
+			return (0f, 0f);
 		}
+		var min = float.MaxValue;
+		var max = float.MinValue;
+		foreach (Node child in conveyors.GetChildren()) {
+			Node3D conveyor = child as Node3D;
+			if (IsConveyor(conveyor)) {
+				// Get the conveyor's Transform in the legStands space.
+				Transform3D localConveyorTransform = legStands.Transform.AffineInverse() * conveyors.Transform * conveyor.Transform;
+				// Get the X extents of the conveyor in the legStands space.
+				Vector3 conveyorExtent1 = localConveyorTransform.Orthonormalized() * new Vector3(-Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) + AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
+				Vector3 conveyorExtent2 = localConveyorTransform.Orthonormalized() * new Vector3(Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) - AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
+				// Update min and max.
+				min = Mathf.Min(min, Mathf.Min(conveyorExtent2.X, conveyorExtent1.X));
+				max = Mathf.Max(max, Mathf.Max(conveyorExtent2.X, conveyorExtent1.X));
+			}
+		}
+		// Round to avoid floating point errors.
+		return ((float) Math.Round(min, ROUNDING_DIGITS), (float) Math.Round(max, ROUNDING_DIGITS));
 	}
 
 	private void UpdateLegStands()
@@ -221,16 +325,7 @@ public partial class ConveyorAssembly : Node3D
 			DeleteSelfOwnedLegStands();
 		}
 
-		// Force legStand alignment with LegStands group.
-		float targetWidth = GetLegStandTargetWitdh();
-		foreach (Node child in legStands.GetChildren()) {
-			ConveyorLeg legStand = child as ConveyorLeg;
-			if (legStand == null) {
-				continue;
-			}
-			SnapToLegStandsPath(legStand);
-			legStand.Scale = new Vector3(1f, legStand.Scale.Y, targetWidth);
-		}
+		SnapAllLegStandsToPath();
 
 		var autoLegStandsUpdateIsNeeded = AutoLegStandsUseInterval != autoLegStandsUseIntervalPrev
 			|| AutoLegStandsInterval != autoLegStandsIntervalPrev
@@ -255,31 +350,6 @@ public partial class ConveyorAssembly : Node3D
 		UpdateLegStandsHeightAndVisibility();
 	}
 
-	private float GetLegStandTargetWitdh() {
-		Node3D firstConveyor = null;
-		foreach (Node child in conveyors.GetChildren()) {
-			Node3D conveyor = child as Node3D;
-			if (IsConveyor(conveyor)) {
-				firstConveyor = conveyor;
-				break;
-			}
-		}
-		// This is a hack to account for the fact that rolling conveyors are slightly wider than belt conveyors.
-		if (firstConveyor is RollerConveyor || firstConveyor is CurvedRollerConveyor) {
-			return this.Scale.Z * 1.055f;
-		}
-		return this.Scale.Z;
-	}
-
-	protected virtual void LockConveyorsGroup() {
-		// Lock Z position
-		conveyors.Position = new Vector3(conveyors.Position.X, conveyors.Position.Y, 0f);
-		// Lock X and Y rotation
-		if (conveyors.Rotation.X > 0.001f || conveyors.Rotation.X < -0.001f || conveyors.Rotation.Y > 0.001f || conveyors.Rotation.Y < -0.001) {
-			// This seems to mess up scale, but at least that's fixed on the next frame.
-			conveyors.Rotation = new Vector3(0f, 0f, conveyors.Rotation.Z);
-		}
-	}
 	protected virtual void LockLegStandsGroup() {
 		// Always align LegStands group with Conveyors group.
 		if (conveyors != null) {
@@ -303,6 +373,49 @@ public partial class ConveyorAssembly : Node3D
 				legStand.QueueFree();
 			}
 		}
+	}
+
+	private void SnapAllLegStandsToPath() {
+		// Force legStand alignment with LegStands group.
+		float targetWidth = GetLegStandTargetWitdh();
+		foreach (Node child in legStands.GetChildren()) {
+			ConveyorLeg legStand = child as ConveyorLeg;
+			if (legStand == null) {
+				continue;
+			}
+			SnapToLegStandsPath(legStand);
+			legStand.Scale = new Vector3(1f, legStand.Scale.Y, targetWidth);
+		}
+
+	}
+
+	private float GetLegStandTargetWitdh() {
+		Node3D firstConveyor = null;
+		foreach (Node child in conveyors.GetChildren()) {
+			Node3D conveyor = child as Node3D;
+			if (IsConveyor(conveyor)) {
+				firstConveyor = conveyor;
+				break;
+			}
+		}
+		// This is a hack to account for the fact that rolling conveyors are slightly wider than belt conveyors.
+		if (firstConveyor is RollerConveyor || firstConveyor is CurvedRollerConveyor) {
+			return this.Scale.Z * 1.055f;
+		}
+		return this.Scale.Z;
+	}
+
+	private void SnapToLegStandsPath(Node3D legStand) {
+		MoveLegStandToPathPosition(legStand, GetPositionOnLegStandsPath(legStand.Position));
+	}
+
+	protected virtual float GetPositionOnLegStandsPath(Vector3 position) {
+		return position.X;
+	}
+
+	protected virtual void MoveLegStandToPathPosition(Node3D legStand, float position) {
+		legStand.Position = new Vector3(position, legStand.Position.Y, 0f);
+		legStand.Rotation = new Vector3(0f, 0f, legStand.Rotation.Z);
 	}
 
 	private void AdjustAutoLegStandPositions() {
@@ -335,19 +448,6 @@ public partial class ConveyorAssembly : Node3D
 		}
 
 		autoLegStandsIntervalPrev = AutoLegStandsInterval;
-	}
-
-	protected virtual float GetPositionOnLegStandsPath(Vector3 position) {
-		return position.X;
-	}
-
-	protected virtual void MoveLegStandToPathPosition(Node3D legStand, float position) {
-		legStand.Position = new Vector3(position, legStand.Position.Y, 0f);
-		legStand.Rotation = new Vector3(0f, 0f, legStand.Rotation.Z);
-	}
-
-	private void SnapToLegStandsPath(Node3D legStand) {
-		MoveLegStandToPathPosition(legStand, GetPositionOnLegStandsPath(legStand.Position));
 	}
 
 	private void CreateAndRemoveAutoLegStands() {
@@ -461,100 +561,5 @@ public partial class ConveyorAssembly : Node3D
 			float tipPosition = GetPositionOnLegStandsPath(legStand.Position + legStand.Basis.Y);
 			legStand.Visible = legStandCoverageMin <= tipPosition && tipPosition <= legStandCoverageMax;
 		}
-	}
-
-	/**
-	 * Counteract the scaling of child nodes as the parent node scales.
-	 *
-	 * This is a hack to allow us to handle grandchildren scale manually.
-	 *
-	 * Child nodes will appear not to scale, but actually, scale inversely to the parent.
-	 * Parent scale will still affect the child's position, but not its apparent rotation.
-	 *
-	 * @param child The child node to prevent scaling.
-	 */
-	private void PreventChildScaling(Node3D child) {
-		var basisRotation = this.Transform.Basis.Orthonormalized();
-		var basisScale = basisRotation.Inverse() * this.Transform.Basis;
-		var xformScaleInverse = new Transform3D(basisScale, new Vector3(0, 0, 0)).AffineInverse();
-
-		var basisRotationPrev = transformPrev.Basis.Orthonormalized();
-		var basisScalePrev = basisRotationPrev.Inverse() * transformPrev.Basis;
-		var xformScalePrev = new Transform3D(basisScalePrev, new Vector3(0, 0, 0));
-
-		// The child transform without the effects of the parent's scale.
-		var childTransformUnscaled = xformScalePrev * child.Transform;
-
-		// Remove any remaining scale. This effectively locks child's scale to (1, 1, 1).
-		childTransformUnscaled.Basis = childTransformUnscaled.Basis.Orthonormalized();
-
-		// Adjust child's position with changes in the parent's scale.
-		childTransformUnscaled.Origin *= basisScalePrev.Inverse() * basisScale;
-
-		// Reapply inverse parent scaling to child.
-		child.Transform = xformScaleInverse * childTransformUnscaled;
-	}
-
-
-	private void PreventAllChildScaling() {
-		foreach (Node3D child in GetChildren()) {
-			Node3D child3D = child as Node3D;
-			if (child3D != null) {
-				PreventChildScaling(child3D);
-			}
-		}
-	}
-
-	private float GetConveyorLineLength() {
-		if (conveyors == null) {
-			return this.Scale.X;
-		}
-		if (AutoScaleConveyors) {
-			var cos = Mathf.Cos(conveyors.Basis.GetEuler().Z);
-			return this.Scale.X * 1 / (Mathf.Abs(cos) >= 0.01f ? cos : 0.01f);
-		}
-		// Add up the length of all conveyors.
-		// Assume all conveyors are aligned end-to-end.
-		var sum = 0f;
-		foreach (Node child in conveyors.GetChildren()) {
-			Node3D conveyor = child as Node3D;
-			if (IsConveyor(conveyor)) {
-				// Assume conveyor scale == length.
-				sum += conveyor.Scale.X;
-			}
-		}
-		return sum;
-	}
-
-	private void UpdateLegStandCoverage() {
-		(legStandCoverageMinPrev, legStandCoverageMaxPrev) = (legStandCoverageMin, legStandCoverageMax);
-		(legStandCoverageMin, legStandCoverageMax) = GetLegStandCoverage();
-	}
-
-	protected virtual (float, float) GetLegStandCoverage() {
-		if (legStands == null || conveyors == null) {
-			return (0f, 0f);
-		}
-		var min = float.MaxValue;
-		var max = float.MinValue;
-		foreach (Node child in conveyors.GetChildren()) {
-			Node3D conveyor = child as Node3D;
-			if (IsConveyor(conveyor)) {
-				// Get the conveyor's Transform in the legStands space.
-				Transform3D localConveyorTransform = legStands.Transform.AffineInverse() * conveyors.Transform * conveyor.Transform;
-				// Get the X extents of the conveyor in the legStands space.
-				Vector3 conveyorExtent1 = localConveyorTransform.Orthonormalized() * new Vector3(-Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) + AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
-				Vector3 conveyorExtent2 = localConveyorTransform.Orthonormalized() * new Vector3(Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) - AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
-				// Update min and max.
-				min = Mathf.Min(min, Mathf.Min(conveyorExtent2.X, conveyorExtent1.X));
-				max = Mathf.Max(max, Mathf.Max(conveyorExtent2.X, conveyorExtent1.X));
-			}
-		}
-		// Round to avoid floating point errors.
-		return ((float) Math.Round(min, ROUNDING_DIGITS), (float) Math.Round(max, ROUNDING_DIGITS));
-	}
-
-	private static bool IsConveyor(Node node) {
-		return node as IConveyor != null || node as RollerConveyor != null || node as CurvedRollerConveyor != null;
 	}
 }
