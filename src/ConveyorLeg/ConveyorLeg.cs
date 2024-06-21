@@ -70,9 +70,6 @@ public partial class ConveyorLeg : Node3D
 		legsSidesMesh1.Scale = new Vector3(1 / Scale.X, 1, 1 / Scale.Z);
 		legsSidesMesh2.Scale = new Vector3(1 / Scale.X, 1, 1 / Scale.Z);
 
-		grab1.GlobalPosition = ((Node3D)ends.GetChild(0)).GlobalPosition;
-		grab2.GlobalPosition = ((Node3D)ends.GetChild(1)).GlobalPosition;
-
 		grab1.GlobalRotationDegrees = new Vector3(0, GlobalRotationDegrees.Y, grabsRotation);
 		grab2.GlobalRotationDegrees = new Vector3(0, GlobalRotationDegrees.Y + 180, -grabsRotation);
 	}
