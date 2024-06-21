@@ -536,7 +536,8 @@ public partial class ConveyorAssembly : Node3D
 			return;
 		}
 		// Plane transformed from conveyors space into legStands space.
-		var conveyorPlane = new Plane(Vector3.Up, new Vector3(0f, -AutoLegStandsModelGrabsOffset, 0f)) * conveyors.Transform.AffineInverse() * legStands.Transform;
+		Plane conveyorPlane = new Plane(Vector3.Up, new Vector3(0f, -AutoLegStandsModelGrabsOffset, 0f)) * conveyors.Transform.AffineInverse() * legStands.Transform;
+		Vector3 conveyorPlaneGlobalNormal = conveyorPlane.Normal * legStands.GlobalBasis.Inverse();
 
 		foreach (Node child in legStands.GetChildren()) {
 			ConveyorLeg legStand = child as ConveyorLeg;
@@ -547,16 +548,16 @@ public partial class ConveyorAssembly : Node3D
 			// Fixes ugly previews in the editor.
 			SetEditableInstance(legStand, true);
 			// Raycast from the minimum-height tip of the leg stand to the conveyor plane.
-			var intersection = conveyorPlane.IntersectsRay(legStand.Position + legStand.Basis.Y.Normalized(), legStand.Basis.Y.Normalized());
+			Vector3? intersection = conveyorPlane.IntersectsRay(legStand.Position + legStand.Basis.Y.Normalized(), legStand.Basis.Y.Normalized());
 			if (intersection == null) {
 				legStand.Visible = false;
 				// Set scale to minimum height.
 				legStand.Scale = new Vector3(1f, 1f, legStand.Scale.Z);
 				continue;
 			}
-			float legHeight = ((Vector3) intersection).Y;
+			float legHeight = intersection.Value.DistanceTo(legStand.Position);
 			legStand.Scale = new Vector3(1f, legHeight, legStand.Scale.Z);
-			legStand.GrabsRotation = Mathf.RadToDeg(legStand.Basis.Y.SignedAngleTo(conveyorPlane.Normal.Slide(legStand.Basis.Z), legStand.Basis.Z));
+			legStand.GrabsRotation = Mathf.RadToDeg(Vector3.Up.SignedAngleTo(conveyorPlaneGlobalNormal.Slide(legStand.GlobalBasis.Z), legStand.GlobalBasis.Z));
 			// Only show leg stands that touch a conveyor.
 			float tipPosition = GetPositionOnLegStandsPath(legStand.Position + legStand.Basis.Y);
 			legStand.Visible = legStandCoverageMin <= tipPosition && tipPosition <= legStandCoverageMax;
