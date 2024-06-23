@@ -6,13 +6,7 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 {
 	#region Overriding default values and units
 	public CurvedConveyorAssembly() {
-		// Override default values for AutoLegStands properties.
-		AutoLegStandsIntervalLegsEnabled = false;
-		AutoLegStandsIntervalLegsInterval = 15f;
-		AutoLegStandsMarginEnds = 0f;
-		AutoLegStandsMarginEndLegs = 0f;
-		AutoLegStandsModelGrabsOffset = 0.5f;
-		AutoLegStandsModelScene = GD.Load<PackedScene>("res://parts/ConveyorLegCBC.tscn");
+		GD.Load<PackedScene>("res://parts/ConveyorLegCBC.tscn");
 	}
 
 	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
