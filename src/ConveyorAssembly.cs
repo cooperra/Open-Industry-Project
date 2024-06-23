@@ -527,28 +527,27 @@ public partial class ConveyorAssembly : Node3D
 			return;
 		}
 		if (!hasFrontLeg && AutoLegStandsEndLegFront) {
-			ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
-			MoveLegStandToPathPosition(legStand, legStandCoverageMin);
-			legStands.AddChild(legStand, forceReadableName: true);
-			legStand.Owner = this;
+			AddLegStandInstance(legStandCoverageMin);
 		}
 		if (!hasRearLeg && AutoLegStandsEndLegRear) {
-			ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
-			MoveLegStandToPathPosition(legStand, legStandCoverageMax);
-			legStands.AddChild(legStand, forceReadableName: true);
-			legStand.Owner = this;
+			AddLegStandInstance(legStandCoverageMax);
 		}
 		if (!AutoLegStandsIntervalLegsEnabled) {
 			return;
 		}
 		for (int i = 0; i < intervalLegStandCount; i++) {
 			if (legStandsInventory[i] == null) {
-				ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
-				MoveLegStandToPathPosition(legStand, (float) Math.Round(firstPosition + i * AutoLegStandsIntervalLegsInterval, ROUNDING_DIGITS));
-				legStands.AddChild(legStand, forceReadableName: true);
-				legStand.Owner = this;
+				AddLegStandInstance((float) Math.Round(firstPosition + i * AutoLegStandsIntervalLegsInterval, ROUNDING_DIGITS));
 			}
 		}
+	}
+
+	private Node3D AddLegStandInstance(float position) {
+		ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
+		MoveLegStandToPathPosition(legStand, position);
+		legStands.AddChild(legStand, forceReadableName: true);
+		legStand.Owner = this;
+		return legStand;
 	}
 	#endregion Leg Stands / Managing auto-instanced leg stands
 
