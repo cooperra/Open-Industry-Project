@@ -63,7 +63,7 @@ public partial class ConveyorAssembly : Node3D
 	#endregion Fields / Leg stand coverage
 	#endregion Fields
 
-	#region Entry
+	#region _Ready and _PhysicsProcess
 	public override void _Ready()
 	{
 		conveyors = GetNode<Node3D>("Conveyors");
@@ -101,9 +101,9 @@ public partial class ConveyorAssembly : Node3D
 		// There are no constraints for this assembly.
 		// This is where one would lock scale components equal to each other or a constant value, for example.
 	}
-	#endregion Entry
+	#endregion _Ready and _PhysicsProcess
 
-	#region Preserving scale of child nodes
+	#region Decouple assembly scale from child scale
 	private void PreventAllChildScaling() {
 		foreach (Node3D child in GetChildren()) {
 			Node3D child3D = child as Node3D;
@@ -116,10 +116,13 @@ public partial class ConveyorAssembly : Node3D
 	/**
 	 * Counteract the scaling of child nodes as the parent node scales.
 	 *
-	 * This is a hack to allow us to handle grandchildren scale manually.
+	 * This is a hack to allow us to decouple the scaling of the assembly from the scaling of its parts.
 	 *
 	 * Child nodes will appear not to scale, but actually, scale inversely to the parent.
 	 * Parent scale will still affect the child's position, but not its apparent rotation.
+	 *
+	 * The downside is the child's scale will be appear locked to (1, 1, 1).
+	 * This is why all of our scalable parts aren't direct children of the assembly.
 	 *
 	 * @param child The child node to prevent scaling.
 	 */
@@ -144,10 +147,10 @@ public partial class ConveyorAssembly : Node3D
 		// Reapply inverse parent scaling to child.
 		child.Transform = xformScaleInverse * childTransformUnscaled;
 	}
-	#endregion Preserving scale of child nodes
+	#endregion Decouple assembly scale from child scale
 
-	#region Conveyor and Side Guard scaling
-	#region Conveyor and Side Guard scaling / Conveyors node
+	#region Scaling Conveyors and Guards
+	#region Scaling Conveyors and Guards / Update "Conveyors" node
 	private void UpdateConveyors()
 	{
 		if (conveyors == null)
@@ -170,9 +173,9 @@ public partial class ConveyorAssembly : Node3D
 			conveyors.Rotation = new Vector3(0f, 0f, conveyors.Rotation.Z);
 		}
 	}
-	#endregion Conveyor and Side Guard scaling / Conveyors node
+	#endregion Scaling Conveyors and Guards / Update "Conveyors" node
 
-	#region Conveyor and Side Guard scaling / Common
+	#region Scaling Conveyors and Guards / ScaleConveyorLine
 	/**
 	 * Get the length of the conveyor line.
 	 *
@@ -235,7 +238,9 @@ public partial class ConveyorAssembly : Node3D
 			conveyor.Scale = new Vector3(conveyor.Scale.X, conveyor.Scale.Y, this.Scale.Z);
 		}
 	}
+	#endregion Scaling Conveyors and Guards / ScaleConveyorLine
 
+	#region Scaling Conveyors and Guards / ScaleSideGuardLine
 	/**
 	 * Scale all side guard children of a given node.
 	 *
@@ -264,9 +269,9 @@ public partial class ConveyorAssembly : Node3D
 			guard.Scale = new Vector3(guardLength, 1f, 1f);
 		}
 	}
-	#endregion Conveyor and Side Guard scaling / Common
+	#endregion Scaling Conveyors and Guards / ScaleSideGuardLine
 
-	#region Conveyor and Side Guard scaling / LeftSide and RightSide nodes
+	#region Scaling Conveyors and Guards / Update "LeftSide" and "RightSide" nodes
 	private void UpdateSides()
 	{
 		UpdateSide(rightSide, true);
@@ -289,11 +294,11 @@ public partial class ConveyorAssembly : Node3D
 		var offsetZ = (isRight? -1 : 1) * side.Basis.Z * (this.Scale.Z - 1f);
 		side.Position += offsetZ;
 	}
-	#endregion Conveyor and Side Guard scaling / LeftSide and RightSide nodes
-	#endregion Conveyor and Side Guard scaling
+	#endregion Scaling Conveyors and Guards / Update "LeftSide" and "RightSide" nodes
+	#endregion Scaling Conveyors and Guards
 
 	#region Leg Stands
-	#region Leg Stands / Conveyor Coverage
+	#region Leg Stands / Conveyor coverage extents
 	private void UpdateLegStandCoverage() {
 		(legStandCoverageMinPrev, legStandCoverageMaxPrev) = (legStandCoverageMin, legStandCoverageMax);
 		(legStandCoverageMin, legStandCoverageMax) = GetLegStandCoverage();
@@ -321,9 +326,9 @@ public partial class ConveyorAssembly : Node3D
 		// Round to avoid floating point errors.
 		return ((float) Math.Round(min, ROUNDING_DIGITS), (float) Math.Round(max, ROUNDING_DIGITS));
 	}
-	#endregion Leg Stands, Conveyor Coverage
+	#endregion Leg Stands / Conveyor coverage extents
 
-	#region Leg Stands / Entry
+	#region Leg Stands / Update "LegStands" node
 	private void UpdateLegStands()
 	{
 		if (legStands == null)
@@ -387,7 +392,7 @@ public partial class ConveyorAssembly : Node3D
 			}
 		}
 	}
-	#endregion Leg Stands / Entry
+	#endregion Leg Stands / Update "LegStands" node
 
 	#region Leg Stands / Basic constraints
 	private void SnapAllLegStandsToPath() {
