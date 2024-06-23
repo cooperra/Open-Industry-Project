@@ -15,17 +15,13 @@ public partial class ConveyorAssembly : Node3D
 	protected Transform3D transformPrev;
 
 	#region Fields / Exported properties
-	#region Fields / Exported properties / Auto Scaling
 	[ExportGroup("Auto Scaling", "AutoScale")]
 	[Export]
 	public bool AutoScaleConveyors { get; set; } = true;
 	[Export]
 	public bool AutoScaleGuards { get; set; } = true;
-	#endregion Fields / Exported properties / Auto Scaling
 
-	#region Fields / Exported properties / Auto Leg Stands
 	[ExportGroup("Auto Leg Stands", "AutoLegStands")]
-	#region Fields / Exported properties / Auto Leg Stands / Interval Legs
 	[ExportSubgroup("Interval Legs", "AutoLegStandsIntervalLegs")]
 	[Export]
 	public bool AutoLegStandsIntervalLegsEnabled { get; set; } = true;
@@ -34,9 +30,7 @@ public partial class ConveyorAssembly : Node3D
 	[Export(PropertyHint.Range, "0.5,10,or_greater,suffix:m")]
 	public float AutoLegStandsIntervalLegsInterval { get; set; } = 2f;
 	private float autoLegStandsIntervalLegsIntervalPrev;
-	#endregion Fields / Exported properties / Auto Leg Stands / Interval Legs
 
-	#region Fields / Exported properties / Auto Leg Stands / End Legs
 	[ExportSubgroup("End Legs", "AutoLegStandsEndLeg")]
 	[Export]
 	public bool AutoLegStandsEndLegFront = true;
@@ -44,18 +38,14 @@ public partial class ConveyorAssembly : Node3D
 	[Export]
 	public bool AutoLegStandsEndLegRear = true;
 	private bool autoLegStandsEndLegRearPrev = false;
-	#endregion Fields / Exported properties / Auto Leg Stands / End Legs
 
-	#region Fields / Exported properties / Auto Leg Stands / Placement Margins
 	[ExportSubgroup("Placement Margins", "AutoLegStandsMargin")]
 	[Export(PropertyHint.Range, "0,1,or_less,or_greater,suffix:m")]
 	public float AutoLegStandsMarginEnds = 0.2f;
 	[Export(PropertyHint.Range, "0.5,5,or_greater,suffix:m")]
 	public float AutoLegStandsMarginEndLegs = 0.5f;
 	private float autoLegStandsMarginEndLegsPrev = 0.5f;
-	#endregion Fields / Exported properties / Auto Leg Stands / Placement Margins
 
-	#region Fields / Exported properties / Auto Leg Stands / Leg Model
 	[ExportSubgroup("Leg Model", "AutoLegStandsModel")]
 	[Export(PropertyHint.None, "suffix:m")]
 	public float AutoLegStandsModelGrabsOffset = 0.382f;
@@ -63,8 +53,6 @@ public partial class ConveyorAssembly : Node3D
 	[Export]
 	public PackedScene AutoLegStandsModelScene = GD.Load<PackedScene>("res://parts/ConveyorLegBC.tscn");
 	private PackedScene autoLegStandsModelScenePrev;
-	#endregion Fields / Exported properties / Auto Leg Stands / Leg Model
-	#endregion Fields / Exported properties / Auto Leg Stands
 	#endregion Fields / Exported properties
 
 	#region Fields / Leg stand coverage
