@@ -126,7 +126,7 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		float radius = this.Scale.X * 1.5f;
 		float angle = Mathf.DegToRad(position);
 		legStand.Position = new Vector3(0, legStand.Position.Y, radius).Rotated(Vector3.Up, angle);
-		legStand.Rotation = new Vector3(0f, angle, legStand.Rotation.Z);
+		legStand.Rotation = new Vector3(0f, angle, 0f);
 	}
 	#endregion Leg Stands
 }
