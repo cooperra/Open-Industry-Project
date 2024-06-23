@@ -13,7 +13,8 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		// Hide unused properties.
 		if (property["name"].AsStringName() == PropertyName.ConveyorAngle
 			|| property["name"].AsStringName() == PropertyName.AutoScaleConveyors
-			|| property["name"].AsStringName() == PropertyName.AutoScaleGuards) {
+			|| property["name"].AsStringName() == PropertyName.AutoScaleGuards
+			|| property["name"].AsStringName() == PropertyName.AutoLegStandsIntervalLegsOffset) {
 			property["usage"] = (int) PropertyUsageFlags.NoEditor;
 		}
 		// This is a hack to change the unit of AutoLegStandsIntervalLegsInterval to degrees in the inspector.

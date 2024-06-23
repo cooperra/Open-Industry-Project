@@ -14,6 +14,7 @@ public partial class ConveyorAssembly : Node3D
 	#endregion Fields / Nodes
 	protected Transform3D transformPrev;
 	private Transform3D conveyorsTransformPrev;
+	private Transform3D legStandsTransformPrev;
 
 	#region Fields / Exported properties
 	[Export(PropertyHint.None, "radians_as_degrees")]
@@ -35,6 +36,10 @@ public partial class ConveyorAssembly : Node3D
 	[Export(PropertyHint.Range, "0.5,10,or_greater,suffix:m")]
 	public float AutoLegStandsIntervalLegsInterval { get; set; } = 2f;
 	private float autoLegStandsIntervalLegsIntervalPrev;
+
+	[Export(PropertyHint.Range, "-5,5,or_less,or_greater,suffix:m")]
+	public float AutoLegStandsIntervalLegsOffset { get; set; } = 0f;
+	private float autoLegStandsIntervalLegsOffsetPrev;
 
 	[ExportSubgroup("End Legs", "AutoLegStandsEndLeg")]
 	[Export]
@@ -79,12 +84,20 @@ public partial class ConveyorAssembly : Node3D
 		transformPrev = this.Transform;
 
 		// Apply the ConveyorsAngle property if needed.
+		Basis assemblyScale = Basis.Identity.Scaled(this.Basis.Scale);
 		if (conveyors != null) {
-			Basis assemblyScale = Basis.Identity.Scaled(this.Basis.Scale);
 			float conveyorsStartingAngle = (assemblyScale * conveyors.Basis).GetEuler().Z;
 			conveyorAnglePrev = conveyorsStartingAngle;
 			conveyorsTransformPrev = conveyors.Transform;
 			SyncConveyorsAngle();
+		}
+
+		// Apply the AutoLegStandsIntervalLegsOffset property if needed.
+		if (legStands != null) {
+			float legStandsStartingOffset = (assemblyScale * legStands.Position).X;
+			autoLegStandsIntervalLegsOffsetPrev = legStandsStartingOffset;
+			legStandsTransformPrev = legStands.Transform;
+			SyncLegStandsOffset();
 		}
 
 		autoLegStandsIntervalLegsIntervalPrev = AutoLegStandsIntervalLegsInterval;
@@ -381,6 +394,7 @@ public partial class ConveyorAssembly : Node3D
 		}
 
 		LockLegStandsGroup();
+		SyncLegStandsOffset();
 
 		// If the leg stand scene changes, we need to regenerate everything.
 		if (AutoLegStandsModelScene != autoLegStandsModelScenePrev) {
@@ -419,6 +433,36 @@ public partial class ConveyorAssembly : Node3D
 			// Conveyors can't rotate anymore, so this doesn't do much.
 			legStands.Rotation = new Vector3(0f, conveyors.Rotation.Y, 0f);
 		}
+	}
+
+	/**
+	 * Synchronize the offset of the leg stands with the assembly's AutoLegStandsIntervalLegsOffset property.
+	 *
+	 * If the property changes, the leg stands are moved to match.
+	 * If the leg stands are moved manually, the property is updated.
+	 * If both happen at the same time, the property wins.
+	 *
+	 * This currently shouldn't do anything for curved assemblies.
+	 */
+	private void SyncLegStandsOffset() {
+		Basis assemblyScale = Basis.Identity.Scaled(this.Basis.Scale);
+		Basis assemblyScalePrev = Basis.Identity.Scaled(transformPrev.Basis.Scale);
+		Vector3 legStandsScaledPosition = assemblyScale * legStands.Position;
+		Vector3 legStandsScaledPositionPrev = assemblyScalePrev * legStandsTransformPrev.Origin;
+		if (AutoLegStandsIntervalLegsOffset != autoLegStandsIntervalLegsOffsetPrev) {
+			Vector3 targetPosition = new Vector3(AutoLegStandsIntervalLegsOffset, legStandsScaledPosition.Y, legStandsScaledPosition.Z);
+			legStands.Position = assemblyScale.Inverse() * targetPosition;
+		} else {
+			float offset = legStandsScaledPosition.X;
+			float offsetPrev = legStandsScaledPositionPrev.X;
+			float offsetDelta = Mathf.Abs(offset - offsetPrev);
+			if (offsetDelta > 0.01f) {
+				this.AutoLegStandsIntervalLegsOffset = offset;
+				NotifyPropertyListChanged();
+			}
+		}
+		autoLegStandsIntervalLegsOffsetPrev = AutoLegStandsIntervalLegsOffset;
+		legStandsTransformPrev = legStands.Transform;
 	}
 
 	private void DeleteSelfOwnedLegStands() {
