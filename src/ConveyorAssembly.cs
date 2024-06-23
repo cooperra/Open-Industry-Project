@@ -11,33 +11,36 @@ public partial class ConveyorAssembly : Node3D
 	protected Node3D legStands;
 	protected Transform3D transformPrev;
 
-	[ExportGroup("Conveyor Automation", "Auto")]
+	[ExportGroup("Auto Scaling", "AutoScale")]
 	[Export]
 	public bool AutoScaleConveyors { get; set; } = true;
 	[Export]
 	public bool AutoScaleGuards { get; set; } = true;
 
-	[ExportGroup("Leg Stands Automation", "AutoLegStands")]
+	[ExportGroup("Auto Leg Stands", "AutoLegStands")]
+	[ExportSubgroup("Interval Legs", "AutoLegStandsIntervalLegs")]
 	[Export]
-	public bool AutoLegStandsUseInterval { get; set; } = true;
-	private bool autoLegStandsUseIntervalPrev = false;
+	public bool AutoLegStandsIntervalLegsEnabled { get; set; } = true;
+	private bool autoLegStandsIntervalLegsEnabledPrev = false;
 
 	[Export(PropertyHint.Range, "0.5,10,or_greater,suffix:m")] // TODO use _ValidateProperty to override this for the CurvedConveyorAssembly degrees unit
-	public float AutoLegStandsInterval { get; set; } = 2f;
-	private float autoLegStandsIntervalPrev;
-	[Export(PropertyHint.Range, "0,1,or_less,or_greater,suffix:m")]
-	public float AutoLegStandsEndOffset = 0.2f;
+	public float AutoLegStandsIntervalLegsInterval { get; set; } = 2f;
+	private float autoLegStandsIntervalLegsIntervalPrev;
 
-	[ExportSubgroup("Fixed Legs", "AutoLegStandsFixed")]
+	[ExportSubgroup("End Legs", "AutoLegStandsEndLeg")]
 	[Export]
-	public bool AutoLegStandsFixedFrontLeg = true;
-	private bool autoLegStandsFixedFrontLegPrev = false;
+	public bool AutoLegStandsEndLegFront = true;
+	private bool autoLegStandsEndLegFrontPrev = false;
 	[Export]
-	public bool AutoLegStandsFixedRearLeg = true;
-	private bool autoLegStandsFixedRearLegPrev = false;
+	public bool AutoLegStandsEndLegRear = true;
+	private bool autoLegStandsEndLegRearPrev = false;
+
+	[ExportSubgroup("Placement Margins", "AutoLegStandsMargin")]
+	[Export(PropertyHint.Range, "0,1,or_less,or_greater,suffix:m")]
+	public float AutoLegStandsMarginEnds = 0.2f;
 	[Export(PropertyHint.Range, "0.5,5,or_greater,suffix:m")]
-	public float AutoLegStandsFixedLegMargin = 0.5f;
-	private float autoLegStandsFixedLegMarginPrev = 0.5f;
+	public float AutoLegStandsMarginEndLegs = 0.5f;
+	private float autoLegStandsMarginEndLegsPrev = 0.5f;
 
 	[ExportSubgroup("Leg Model", "AutoLegStandsModel")]
 	[Export(PropertyHint.None, "suffix:m")]
@@ -59,7 +62,7 @@ public partial class ConveyorAssembly : Node3D
 		leftSide = GetNodeOrNull<Node3D>("LeftSide");
 		legStands = GetNodeOrNull<Node3D>("LegStands");
 		transformPrev = this.Transform;
-		autoLegStandsIntervalPrev = AutoLegStandsInterval;
+		autoLegStandsIntervalLegsIntervalPrev = AutoLegStandsIntervalLegsInterval;
 		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
 		UpdateLegStandCoverage();
 		// All existing leg stands that we own must be regenerated. We can't trust them remain correct.
@@ -80,10 +83,10 @@ public partial class ConveyorAssembly : Node3D
 		UpdateLegStandCoverage();
 		UpdateLegStands();
 		transformPrev = this.Transform;
-		autoLegStandsUseIntervalPrev = AutoLegStandsUseInterval;
-		autoLegStandsFixedFrontLegPrev = AutoLegStandsFixedFrontLeg;
-		autoLegStandsFixedRearLegPrev = AutoLegStandsFixedRearLeg;
-		autoLegStandsFixedLegMarginPrev = AutoLegStandsFixedLegMargin;
+		autoLegStandsIntervalLegsEnabledPrev = AutoLegStandsIntervalLegsEnabled;
+		autoLegStandsEndLegFrontPrev = AutoLegStandsEndLegFront;
+		autoLegStandsEndLegRearPrev = AutoLegStandsEndLegRear;
+		autoLegStandsMarginEndLegsPrev = AutoLegStandsMarginEndLegs;
 		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
 	}
 
@@ -300,8 +303,8 @@ public partial class ConveyorAssembly : Node3D
 				// Get the conveyor's Transform in the legStands space.
 				Transform3D localConveyorTransform = legStands.Transform.AffineInverse() * conveyors.Transform * conveyor.Transform;
 				// Get the X extents of the conveyor in the legStands space.
-				Vector3 conveyorExtent1 = localConveyorTransform.Orthonormalized() * new Vector3(-Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) + AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
-				Vector3 conveyorExtent2 = localConveyorTransform.Orthonormalized() * new Vector3(Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) - AutoLegStandsEndOffset, -AutoLegStandsModelGrabsOffset, 0f);
+				Vector3 conveyorExtent1 = localConveyorTransform.Orthonormalized() * new Vector3(-Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) + AutoLegStandsMarginEnds, -AutoLegStandsModelGrabsOffset, 0f);
+				Vector3 conveyorExtent2 = localConveyorTransform.Orthonormalized() * new Vector3(Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f) - AutoLegStandsMarginEnds, -AutoLegStandsModelGrabsOffset, 0f);
 				// Update min and max.
 				min = Mathf.Min(min, Mathf.Min(conveyorExtent2.X, conveyorExtent1.X));
 				max = Mathf.Max(max, Mathf.Max(conveyorExtent2.X, conveyorExtent1.X));
@@ -327,11 +330,11 @@ public partial class ConveyorAssembly : Node3D
 
 		SnapAllLegStandsToPath();
 
-		var autoLegStandsUpdateIsNeeded = AutoLegStandsUseInterval != autoLegStandsUseIntervalPrev
-			|| AutoLegStandsInterval != autoLegStandsIntervalPrev
-			|| AutoLegStandsFixedFrontLeg != autoLegStandsFixedFrontLegPrev
-			|| AutoLegStandsFixedRearLeg != autoLegStandsFixedRearLegPrev
-			|| AutoLegStandsFixedLegMargin != autoLegStandsFixedLegMarginPrev
+		var autoLegStandsUpdateIsNeeded = AutoLegStandsIntervalLegsEnabled != autoLegStandsIntervalLegsEnabledPrev
+			|| AutoLegStandsIntervalLegsInterval != autoLegStandsIntervalLegsIntervalPrev
+			|| AutoLegStandsEndLegFront != autoLegStandsEndLegFrontPrev
+			|| AutoLegStandsEndLegRear != autoLegStandsEndLegRearPrev
+			|| AutoLegStandsMarginEndLegs != autoLegStandsMarginEndLegsPrev
 			|| AutoLegStandsModelScene != autoLegStandsModelScenePrev
 			|| legStandCoverageMin != legStandCoverageMinPrev
 			|| legStandCoverageMax != legStandCoverageMaxPrev;
@@ -420,8 +423,8 @@ public partial class ConveyorAssembly : Node3D
 
 	private void AdjustAutoLegStandPositions() {
 		// Don't allow tiny or negative intervals.
-		AutoLegStandsInterval = Mathf.Max(0.5f, AutoLegStandsInterval);
-		if (AutoLegStandsInterval == autoLegStandsIntervalPrev && legStandCoverageMax == legStandCoverageMaxPrev && legStandCoverageMin == legStandCoverageMinPrev) {
+		AutoLegStandsIntervalLegsInterval = Mathf.Max(0.5f, AutoLegStandsIntervalLegsInterval);
+		if (AutoLegStandsIntervalLegsInterval == autoLegStandsIntervalLegsIntervalPrev && legStandCoverageMax == legStandCoverageMaxPrev && legStandCoverageMin == legStandCoverageMinPrev) {
 			return;
 		}
 		foreach (Node child in legStands.GetChildren()) {
@@ -434,36 +437,36 @@ public partial class ConveyorAssembly : Node3D
 				continue;
 			}
 			// Handle front and rear legs first.
-			if (AutoLegStandsFixedFrontLeg && legStand.Position.X == legStandCoverageMinPrev) {
+			if (AutoLegStandsEndLegFront && legStand.Position.X == legStandCoverageMinPrev) {
 				legStand.Position = new Vector3(legStandCoverageMin, legStand.Position.Y, 0f);
 				continue;
 			}
-			if (AutoLegStandsFixedRearLeg && legStand.Position.X == legStandCoverageMaxPrev) {
+			if (AutoLegStandsEndLegRear && legStand.Position.X == legStandCoverageMaxPrev) {
 				legStand.Position = new Vector3(legStandCoverageMax, legStand.Position.Y, 0f);
 				continue;
 			}
 			// Update leg stand position to the new interval.
-			int legStandIndex = (int) Mathf.Round(GetPositionOnLegStandsPath(legStand.Position) / autoLegStandsIntervalPrev);
-			MoveLegStandToPathPosition(legStand, (float) Math.Round(legStandIndex * AutoLegStandsInterval, ROUNDING_DIGITS));
+			int legStandIndex = (int) Mathf.Round(GetPositionOnLegStandsPath(legStand.Position) / autoLegStandsIntervalLegsIntervalPrev);
+			MoveLegStandToPathPosition(legStand, (float) Math.Round(legStandIndex * AutoLegStandsIntervalLegsInterval, ROUNDING_DIGITS));
 		}
 
-		autoLegStandsIntervalPrev = AutoLegStandsInterval;
+		autoLegStandsIntervalLegsIntervalPrev = AutoLegStandsIntervalLegsInterval;
 	}
 
 	private void CreateAndRemoveAutoLegStands() {
 		// Don't allow negative margins.
-		AutoLegStandsFixedLegMargin = Mathf.Max(0f, AutoLegStandsFixedLegMargin);
+		AutoLegStandsMarginEndLegs = Mathf.Max(0f, AutoLegStandsMarginEndLegs);
 		// Enforce a margin from fixed front and rear legs if they exist.
-		float frontMargin = AutoLegStandsFixedFrontLeg ? AutoLegStandsFixedLegMargin : 0f;
-		float rearMargin = AutoLegStandsFixedRearLeg ? AutoLegStandsFixedLegMargin : 0f;
-		float firstPosition = (float) Math.Ceiling((legStandCoverageMin + frontMargin) / AutoLegStandsInterval) * AutoLegStandsInterval;
-		float lastPosition = (float) Math.Floor((legStandCoverageMax - rearMargin) / AutoLegStandsInterval) * AutoLegStandsInterval;
+		float frontMargin = AutoLegStandsEndLegFront ? AutoLegStandsMarginEndLegs : 0f;
+		float rearMargin = AutoLegStandsEndLegRear ? AutoLegStandsMarginEndLegs : 0f;
+		float firstPosition = (float) Math.Ceiling((legStandCoverageMin + frontMargin) / AutoLegStandsIntervalLegsInterval) * AutoLegStandsIntervalLegsInterval;
+		float lastPosition = (float) Math.Floor((legStandCoverageMax - rearMargin) / AutoLegStandsIntervalLegsInterval) * AutoLegStandsIntervalLegsInterval;
 		int intervalLegStandCount;
 		if (firstPosition > lastPosition) {
 			// Invalid range implies zero interval-aligned leg stands are needed.
 			intervalLegStandCount = 0;
 		} else {
-			intervalLegStandCount = (int) ((lastPosition - firstPosition) / AutoLegStandsInterval) + 1;
+			intervalLegStandCount = (int) ((lastPosition - firstPosition) / AutoLegStandsIntervalLegsInterval) + 1;
 		}
 		// Inventory our existing leg stands and delete the ones we don't need.
 		var hasFrontLeg = false;
@@ -479,20 +482,20 @@ public partial class ConveyorAssembly : Node3D
 				continue;
 			}
 			// Ignore existing front and rear legs.
-			var isFrontLeg = AutoLegStandsFixedFrontLeg && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMin;
-			var isRearLeg = AutoLegStandsFixedRearLeg && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMax;
+			var isFrontLeg = AutoLegStandsEndLegFront && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMin;
+			var isRearLeg = AutoLegStandsEndLegRear && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMax;
 			if (isFrontLeg || isRearLeg) {
 				hasFrontLeg = hasFrontLeg || isFrontLeg;
 				hasRearLeg = hasRearLeg || isRearLeg;
 				continue;
 			}
-			if (AutoLegStandsUseInterval) {
+			if (AutoLegStandsIntervalLegsEnabled) {
 				// Delete leg stands that are not in the new interval.
 				if (GetPositionOnLegStandsPath(legStand.Position) < firstPosition || GetPositionOnLegStandsPath(legStand.Position) > lastPosition) {
 					legStand.QueueFree();
 				} else {
 					// Store leg stands that are in the new interval.
-					legStandsInventory[(int) Math.Round((GetPositionOnLegStandsPath(legStand.Position) - firstPosition) / AutoLegStandsInterval)] = legStand;
+					legStandsInventory[(int) Math.Round((GetPositionOnLegStandsPath(legStand.Position) - firstPosition) / AutoLegStandsIntervalLegsInterval)] = legStand;
 				}
 			} else {
 				// Delete all interval leg stands if we're not using intervals.
@@ -504,25 +507,25 @@ public partial class ConveyorAssembly : Node3D
 		if (AutoLegStandsModelScene == null) {
 			return;
 		}
-		if (!hasFrontLeg && AutoLegStandsFixedFrontLeg) {
+		if (!hasFrontLeg && AutoLegStandsEndLegFront) {
 			ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
 			MoveLegStandToPathPosition(legStand, legStandCoverageMin);
 			legStands.AddChild(legStand, forceReadableName: true);
 			legStand.Owner = this;
 		}
-		if (!hasRearLeg && AutoLegStandsFixedRearLeg) {
+		if (!hasRearLeg && AutoLegStandsEndLegRear) {
 			ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
 			MoveLegStandToPathPosition(legStand, legStandCoverageMax);
 			legStands.AddChild(legStand, forceReadableName: true);
 			legStand.Owner = this;
 		}
-		if (!AutoLegStandsUseInterval) {
+		if (!AutoLegStandsIntervalLegsEnabled) {
 			return;
 		}
 		for (int i = 0; i < intervalLegStandCount; i++) {
 			if (legStandsInventory[i] == null) {
 				ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
-				MoveLegStandToPathPosition(legStand, (float) Math.Round(firstPosition + i * AutoLegStandsInterval, ROUNDING_DIGITS));
+				MoveLegStandToPathPosition(legStand, (float) Math.Round(firstPosition + i * AutoLegStandsIntervalLegsInterval, ROUNDING_DIGITS));
 				legStands.AddChild(legStand, forceReadableName: true);
 				legStand.Owner = this;
 			}

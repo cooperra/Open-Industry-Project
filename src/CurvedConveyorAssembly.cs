@@ -6,10 +6,10 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 {
 	public CurvedConveyorAssembly() {
 		// Override default values for AutoLegStands properties.
-		AutoLegStandsUseInterval = false;
-		AutoLegStandsInterval = 15f;
-		AutoLegStandsEndOffset = 0f;
-		AutoLegStandsFixedLegMargin = 0f;
+		AutoLegStandsIntervalLegsEnabled = false;
+		AutoLegStandsIntervalLegsInterval = 15f;
+		AutoLegStandsMarginEnds = 0f;
+		AutoLegStandsMarginEndLegs = 0f;
 		AutoLegStandsModelGrabsOffset = 0.5f;
 		AutoLegStandsModelScene = GD.Load<PackedScene>("res://parts/ConveyorLegCBC.tscn");
 	}
@@ -20,18 +20,18 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 			|| property["name"].AsStringName() == PropertyName.AutoScaleGuards) {
 			property["usage"] = (int) PropertyUsageFlags.NoEditor;
 		}
-		// This is a hack to change the unit of AutoLegStandsInterval to degrees in the inspector.
-		if (property["name"].AsStringName() == PropertyName.AutoLegStandsInterval) {
+		// This is a hack to change the unit of AutoLegStandsIntervalLegsInterval to degrees in the inspector.
+		if (property["name"].AsStringName() == PropertyName.AutoLegStandsIntervalLegsInterval) {
 			property["hint"] = (int) PropertyHint.Range;
 			property["hint_string"] = "5,90,1,degrees";
 		}
-		// This is a hack to change the unit of AutoLegStandsEndOffset to degrees in the inspector.
-		if (property["name"].AsStringName() == PropertyName.AutoLegStandsEndOffset) {
+		// This is a hack to change the unit of AutoLegStandsMarginEnds to degrees in the inspector.
+		if (property["name"].AsStringName() == PropertyName.AutoLegStandsMarginEnds) {
 			property["hint"] = (int) PropertyHint.Range;
 			property["hint_string"] = "0,90,1,degrees";
 		}
-		// This is a hack to change the unit of AutoLegStandsFixedLegMargin to degrees in the inspector.
-		if (property["name"].AsStringName() == PropertyName.AutoLegStandsFixedLegMargin) {
+		// This is a hack to change the unit of AutoLegStandsMarginEndLegs to degrees in the inspector.
+		if (property["name"].AsStringName() == PropertyName.AutoLegStandsMarginEndLegs) {
 			property["hint"] = (int) PropertyHint.Range;
 			property["hint_string"] = "0,90,1,degrees";
 		}
@@ -39,30 +39,30 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 
 	public override bool _PropertyCanRevert(StringName property) {
 		// This is a hack to enable overriding the default value of these properties.
-		return property == PropertyName.AutoLegStandsUseInterval
-			|| property == PropertyName.AutoLegStandsInterval
-			|| property == PropertyName.AutoLegStandsEndOffset
-			|| property == PropertyName.AutoLegStandsFixedLegMargin
+		return property == PropertyName.AutoLegStandsIntervalLegsEnabled
+			|| property == PropertyName.AutoLegStandsIntervalLegsInterval
+			|| property == PropertyName.AutoLegStandsMarginEnds
+			|| property == PropertyName.AutoLegStandsMarginEndLegs
 			|| property == PropertyName.AutoLegStandsModelGrabsOffset
 			|| property == PropertyName.AutoLegStandsModelScene
 			|| base._PropertyCanRevert(property);
 	}
 
 	public override Variant _PropertyGetRevert(StringName property) {
-		// This is a hack to override the default value of AutoLegStandsUseInterval.
-		if (property == PropertyName.AutoLegStandsUseInterval) {
+		// This is a hack to override the default value of AutoLegStandsIntervalLegsEnabled.
+		if (property == PropertyName.AutoLegStandsIntervalLegsEnabled) {
 			return false;
 		}
-		// This is a hack to override the default value of AutoLegStandsInterval.
-		if (property == PropertyName.AutoLegStandsInterval) {
+		// This is a hack to override the default value of AutoLegStandsIntervalLegsInterval.
+		if (property == PropertyName.AutoLegStandsIntervalLegsInterval) {
 			return 15f;
 		}
-		// This is a hack to override the default value of AutoLegStandsEndOffset.
-		if (property == PropertyName.AutoLegStandsEndOffset) {
+		// This is a hack to override the default value of AutoLegStandsMarginEnds.
+		if (property == PropertyName.AutoLegStandsMarginEnds) {
 			return 0f;
 		}
-		// This is a hack to override the default value of AutoLegStandsFixedLegMargin.
-		if (property == PropertyName.AutoLegStandsFixedLegMargin) {
+		// This is a hack to override the default value of AutoLegStandsMarginEndLegs.
+		if (property == PropertyName.AutoLegStandsMarginEndLegs) {
 			return 0f;
 		}
 		// This is a hack to override the default value of AutoLegStandsModelGrabsOffset.
@@ -122,7 +122,7 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 
 	protected override (float, float) GetLegStandCoverage() {
 		// TODO account for rotation between legStands and conveyors
-		return (-90f + AutoLegStandsEndOffset, 0f - AutoLegStandsEndOffset);
+		return (-90f + AutoLegStandsMarginEnds, 0f - AutoLegStandsMarginEnds);
 	}
 	protected override void LockLegStandsGroup() {
 		// We should probably let this rotate around the Y axis, but that would require accounting for that rotation in GetLegStandsCoverage().
