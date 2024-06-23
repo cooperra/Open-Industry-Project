@@ -252,10 +252,10 @@ shadow_mesh = SubResource("ArrayMesh_xr7le")
 
 [node name="CurvedBeltConveyorAssembly" type="Node3D"]
 script = ExtResource("1_tp652")
-AutoLegStandsUseInterval = false
-AutoLegStandsInterval = 15.0
-AutoLegStandsEndOffset = 0.0
-AutoLegStandsFixedLegMargin = 0.0
+AutoLegStandsIntervalLegsEnabled = false
+AutoLegStandsIntervalLegsInterval = 45.0
+AutoLegStandsMarginEnds = 0.0
+AutoLegStandsMarginEndLegs = 0.0
 AutoLegStandsModelGrabsOffset = 0.5
 AutoLegStandsModelScene = ExtResource("2_0xmjf")
 

@@ -50,7 +50,7 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		}
 		// This is a hack to override the default value of AutoLegStandsIntervalLegsInterval.
 		if (property == PropertyName.AutoLegStandsIntervalLegsInterval) {
-			return 15f;
+			return 45f;
 		}
 		// This is a hack to override the default value of AutoLegStandsMarginEnds.
 		if (property == PropertyName.AutoLegStandsMarginEnds) {
