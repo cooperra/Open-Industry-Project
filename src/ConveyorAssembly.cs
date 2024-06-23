@@ -73,9 +73,6 @@ public partial class ConveyorAssembly : Node3D
 
 	public override void _PhysicsProcess(double delta)
 	{
-		if (GetChildCount() == 0){
-			SetupDefaultChildren();
-		}
 		ApplyAssemblyScaleConstraints();
 		PreventAllChildScaling();
 		UpdateConveyors();
@@ -88,39 +85,6 @@ public partial class ConveyorAssembly : Node3D
 		autoLegStandsEndLegRearPrev = AutoLegStandsEndLegRear;
 		autoLegStandsMarginEndLegsPrev = AutoLegStandsMarginEndLegs;
 		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
-	}
-
-	private void SetupDefaultChildren()
-	{
-
-		GD.Print("Creating default children.");
-		var root = GetTree().EditedSceneRoot;
-		if (root == null)
-		{
-			GD.Print("No root node found.");
-			return;
-		}
-
-		conveyors = new Node3D();
-		conveyors.Name = "Conveyors";
-		AddChild(conveyors);
-		conveyors.Owner = root;
-
-		rightSide = new Node3D();
-		rightSide.Name = "RightSide";
-		AddChild(rightSide);
-		conveyors.Owner = root;
-
-		leftSide = new Node3D();
-		leftSide.Name = "LeftSide";
-		AddChild(leftSide);
-		conveyors.Owner = root;
-
-		legStands = new Node3D();
-		legStands.Name = "LegStands";
-		AddChild(legStands);
-		conveyors.Owner = root;
-		GD.Print("Default children created.");
 	}
 
 	protected virtual void ApplyAssemblyScaleConstraints()
