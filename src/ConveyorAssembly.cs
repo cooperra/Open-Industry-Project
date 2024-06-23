@@ -13,8 +13,13 @@ public partial class ConveyorAssembly : Node3D
 	protected Node3D legStands;
 	#endregion Fields / Nodes
 	protected Transform3D transformPrev;
+	private Transform3D conveyorsTransformPrev;
 
 	#region Fields / Exported properties
+	[Export(PropertyHint.None, "radians_as_degrees")]
+	public float ConveyorAngle { get; set; } = 0f;
+	private float conveyorAnglePrev = 0f;
+
 	[ExportGroup("Auto Scaling", "AutoScale")]
 	[Export]
 	public bool AutoScaleConveyors { get; set; } = true;
@@ -70,10 +75,22 @@ public partial class ConveyorAssembly : Node3D
 		rightSide = GetNodeOrNull<Node3D>("RightSide");
 		leftSide = GetNodeOrNull<Node3D>("LeftSide");
 		legStands = GetNodeOrNull<Node3D>("LegStands");
+
 		transformPrev = this.Transform;
+
+		// Apply the ConveyorsAngle property if needed.
+		if (conveyors != null) {
+			Basis assemblyScale = Basis.Identity.Scaled(this.Basis.Scale);
+			float conveyorsStartingAngle = (assemblyScale * conveyors.Basis).GetEuler().Z;
+			conveyorAnglePrev = conveyorsStartingAngle;
+			conveyorsTransformPrev = conveyors.Transform;
+			SyncConveyorsAngle();
+		}
+
 		autoLegStandsIntervalLegsIntervalPrev = AutoLegStandsIntervalLegsInterval;
 		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
 		UpdateLegStandCoverage();
+
 		// All existing leg stands that we own must be regenerated. We can't trust them remain correct.
 		// ^ The above claim might not be true now that we SetEditableInstance(legStand, true) on all our leg stands.
 		// Still, deleting all the leg stands is safer until we're certain that there won't be issues.
@@ -159,6 +176,7 @@ public partial class ConveyorAssembly : Node3D
 		}
 
 		LockConveyorsGroup();
+		SyncConveyorsAngle();
 		var conveyorLineLength = GetConveyorLineLength();
 		ScaleConveyorLine(conveyors, conveyorLineLength);
 		ScaleSideGuardLine(conveyors, conveyorLineLength);
@@ -172,6 +190,32 @@ public partial class ConveyorAssembly : Node3D
 			// This seems to mess up scale, but at least that's fixed on the next frame.
 			conveyors.Rotation = new Vector3(0f, 0f, conveyors.Rotation.Z);
 		}
+	}
+
+	/**
+	 * Synchronize the angle of the conveyors with the assembly's ConveyorAngle property.
+	 *
+	 * If the property changes, the conveyors are rotated to match.
+	 * If the conveyors are rotated manually, the property is updated.
+	 * If both happen at the same time, the property wins.
+	 */
+	private void SyncConveyorsAngle() {
+		Basis scale = Basis.Identity.Scaled(this.Basis.Scale);
+		Basis scalePrev = Basis.Identity.Scaled(transformPrev.Basis.Scale);
+		if (ConveyorAngle != conveyorAnglePrev) {
+			Basis targetRot = new Basis(new Vector3(0, 0, 1), ConveyorAngle);
+			conveyors.Basis = scale.Inverse() * targetRot;
+		} else {
+			float angle = (scale * conveyors.Basis).GetEuler().Z;
+			float anglePrev = (scalePrev * conveyorsTransformPrev.Basis).GetEuler().Z;
+			double angleDelta = Mathf.Abs(angle - anglePrev) % (2 * Math.PI);
+			if (angleDelta > Math.PI / 360.0) {
+				this.ConveyorAngle = (scale * conveyors.Basis).GetEuler().Z;
+				NotifyPropertyListChanged();
+			}
+		}
+		conveyorAnglePrev = ConveyorAngle;
+		conveyorsTransformPrev = conveyors.Transform;
 	}
 	#endregion Scaling Conveyors and Guards / Update "Conveyors" node
 
