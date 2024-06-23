@@ -4,6 +4,7 @@ using System;
 [Tool]
 public partial class CurvedConveyorAssembly : ConveyorAssembly
 {
+	#region Overriding default values and units
 	public CurvedConveyorAssembly() {
 		// Override default values for AutoLegStands properties.
 		AutoLegStandsIntervalLegsEnabled = false;
@@ -75,26 +76,9 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		}
 		return base._PropertyGetRevert(property);
 	}
+	#endregion Overriding default values and units
 
 	protected override void ApplyAssemblyScaleConstraints() {
-		// // Lock X and Z scale to be the same.
-		// // This allows the user to adjust either scale handle for the same effect.
-		// // Use whichever one has been changed most recently or X if both have changed.
-		// (var x, var y, var z) = this.Transform.Basis.Scale;
-		// if (x != z) {
-		// 	if (x != this.transformPrev.Basis.Scale.X) {
-		// 		//this.Transform.Basis.Scale = new Vector3(x, y, x);
-		// 		Basis bar = this.Transform.Basis.Orthonormalized();
-		// 		bar = new Basis(bar.X * x, bar.Y * y, bar.Z * x);
-		// 		this.Transform = new Transform3D(bar, this.Transform.Origin);
-		// 	} else if (z != this.transformPrev.Basis.Scale.Z){
-		// 		//this.Transform.Basis.Scale = new Vector3(z, y, z);
-		// 		Basis bar = this.Transform.Basis.Orthonormalized();
-		// 		bar = new Basis(bar.X * z, bar.Y * y, bar.Z * z);
-		// 		this.Transform = new Transform3D(bar, this.Transform.Origin);
-		// 	}
-		// }
-
 		// Lock Z scale to be the same as X scale.
 		(var scaleX, var scaleY, var scaleZ) = this.Transform.Basis.Scale;
 		if (scaleX != scaleZ) {
@@ -104,28 +88,31 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		}
 	}
 
+	#region Conveyors and Side Guards
 	protected override void LockConveyorsGroup() {
 		// Just don't let it move at all, except Y axis translation.;
 		conveyors.Rotation = new Vector3(0, 0, 0);
 		conveyors.Position = new Vector3(0, conveyors.Position.Y, 0);
 	}
 
-	protected override void ScaleConveyor(Node3D conveyor, float conveyorLineLength) {
-		// AutoScaleConveyors and conveyorLineLength have no effect on curved conveyors.
+	protected override void ScaleConveyor(Node3D conveyor, float conveyorLength) {
+		// AutoScaleConveyors and conveyorLength have no effect on curved conveyors.
 		conveyor.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
 	}
 
-	protected override void ScaleSideGuard(Node3D guard, float conveyorLineLength) {
-		// AutoScaleGuards and conveyorLineLength have no effect on curved side guards.
+	protected override void ScaleSideGuard(Node3D guard, float guardLength) {
+		// AutoScaleGuards and guardLength have no effect on curved side guards.
 		guard.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
 	}
+	#endregion Conveyors and Side Guards
 
+	#region Leg Stands
 	protected override (float, float) GetLegStandCoverage() {
-		// TODO account for rotation between legStands and conveyors
+		// Assume that conveyors and legStands have the same rotation.
 		return (-90f + AutoLegStandsMarginEnds, 0f - AutoLegStandsMarginEnds);
 	}
 	protected override void LockLegStandsGroup() {
-		// We should probably let this rotate around the Y axis, but that would require accounting for that rotation in GetLegStandsCoverage().
+		// We should probably let this rotate around the Y axis, but that would require accounting for legStands rotation in GetLegStandsCoverage().
 		// For now, we won't let it move at all except Y axis translation.
 		legStands.Rotation = new Vector3(0, 0, 0);
 		legStands.Position = new Vector3(0, legStands.Position.Y, 0);
@@ -141,4 +128,5 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		legStand.Position = new Vector3(0, legStand.Position.Y, radius).Rotated(Vector3.Up, angle);
 		legStand.Rotation = new Vector3(0f, angle, legStand.Rotation.Z);
 	}
+	#endregion Leg Stands
 }

@@ -5,6 +5,7 @@ using System;
 public partial class ConveyorAssembly : Node3D
 {
 	private const int ROUNDING_DIGITS = 3;
+	#region Fields
 	protected Node3D conveyors;
 	private Node3D rightSide;
 	private Node3D leftSide;
@@ -23,7 +24,7 @@ public partial class ConveyorAssembly : Node3D
 	public bool AutoLegStandsIntervalLegsEnabled { get; set; } = true;
 	private bool autoLegStandsIntervalLegsEnabledPrev = false;
 
-	[Export(PropertyHint.Range, "0.5,10,or_greater,suffix:m")] // TODO use _ValidateProperty to override this for the CurvedConveyorAssembly degrees unit
+	[Export(PropertyHint.Range, "0.5,10,or_greater,suffix:m")]
 	public float AutoLegStandsIntervalLegsInterval { get; set; } = 2f;
 	private float autoLegStandsIntervalLegsIntervalPrev;
 
@@ -54,7 +55,9 @@ public partial class ConveyorAssembly : Node3D
 	private float legStandCoverageMax;
 	private float legStandCoverageMinPrev;
 	private float legStandCoverageMaxPrev;
+	#endregion Fields
 
+	#region Entry
 	public override void _Ready()
 	{
 		conveyors = GetNode<Node3D>("Conveyors");
@@ -92,7 +95,9 @@ public partial class ConveyorAssembly : Node3D
 		// There are no constraints for this assembly.
 		// This is where one would lock scale components equal to each other or a constant value, for example.
 	}
+	#endregion Entry
 
+	#region Preserving scale of child nodes
 	private void PreventAllChildScaling() {
 		foreach (Node3D child in GetChildren()) {
 			Node3D child3D = child as Node3D;
@@ -133,7 +138,10 @@ public partial class ConveyorAssembly : Node3D
 		// Reapply inverse parent scaling to child.
 		child.Transform = xformScaleInverse * childTransformUnscaled;
 	}
+	#endregion Preserving scale of child nodes
 
+	#region Conveyor and Side Guard scaling
+	#region Conveyor and Side Guard scaling / Conveyors node
 	private void UpdateConveyors()
 	{
 		if (conveyors == null)
@@ -142,21 +150,9 @@ public partial class ConveyorAssembly : Node3D
 		}
 
 		LockConveyorsGroup();
-
 		var conveyorLineLength = GetConveyorLineLength();
-		// TODO enact a scheme where conveyors are scaled proportionally to the each other. (But there is that factor where the tips will overlap... Better than nothing!)
-
-		foreach (Node child in conveyors.GetChildren()) {
-			Node3D child3d = child as Node3D;
-			if (IsConveyor(child3d)) {
-				SetEditableInstance(child3d, true);
-				ScaleConveyor(child3d, conveyorLineLength);
-			}
-			if (IsSideGuard(child3d)) {
-				SetEditableInstance(child3d, true);
-				ScaleSideGuard(child3d, conveyorLineLength);
-			}
-		}
+		ScaleConveyorLine(conveyors, conveyorLineLength);
+		ScaleSideGuardLine(conveyors, conveyorLineLength);
 	}
 
 	protected virtual void LockConveyorsGroup() {
@@ -168,7 +164,19 @@ public partial class ConveyorAssembly : Node3D
 			conveyors.Rotation = new Vector3(0f, 0f, conveyors.Rotation.Z);
 		}
 	}
+	#endregion Conveyor and Side Guard scaling / Conveyors node
 
+	#region Conveyor and Side Guard scaling / Common
+	/**
+	 * Get the length of the conveyor line.
+	 *
+	 * If AutoScaleConveyors is enabled, this is the length required for the conveyor line, at its current angle, to span the assembly's x-axis one meter per unit of assembly x-scale.
+	 *
+	 * If AutoScaleConveyors is disabled, this is the sum of the lengths of all conveyors in the line.
+	 * We assume that they're parallel and aligned end-to-end.
+	 *
+	 * @return The length of the conveyor line along its x-axis.
+	 */
 	private float GetConveyorLineLength() {
 		if (conveyors == null) {
 			return this.Scale.X;
@@ -190,29 +198,69 @@ public partial class ConveyorAssembly : Node3D
 		return sum;
 	}
 
+	/**
+	 * Scale all conveyor children of a given node.
+	 *
+	 * This would be a great place to implement proportional scaling and positioning of the conveyors,
+	 * but currently, we just scale every conveyor to the length of the whole line and leave its position alone.
+	 *
+	 * @param conveyorLine The parent of the conveyors.
+	 * @param conveyorLineLength The length of the conveyor line to scale to. Ignored if AutoScaleConveyors is false.
+	 */
+	private void ScaleConveyorLine(Node3D conveyorLine, float conveyorLineLength) {
+		foreach (Node child in conveyorLine.GetChildren()) {
+			Node3D child3d = child as Node3D;
+			if (IsConveyor(child3d)) {
+				SetEditableInstance(child3d, true);
+				ScaleConveyor(child3d, conveyorLineLength);
+			}
+		}
+	}
+
 	private static bool IsConveyor(Node node) {
 		return node as IConveyor != null || node as RollerConveyor != null || node as CurvedRollerConveyor != null;
 	}
 
-	private bool IsSideGuard(Node node) {
-		return node as SideGuard != null || node as SideGuardCBC != null;
-	}
-
-	protected virtual void ScaleConveyor(Node3D conveyor, float conveyorLineLength) {
+	protected virtual void ScaleConveyor(Node3D conveyor, float conveyorLength) {
 		if (AutoScaleConveyors) {
-			conveyor.Scale = new Vector3(conveyorLineLength, 1f, this.Scale.Z);
+			conveyor.Scale = new Vector3(conveyorLength, 1f, this.Scale.Z);
 		} else {
 			// Always scale width.
 			conveyor.Scale = new Vector3(conveyor.Scale.X, conveyor.Scale.Y, this.Scale.Z);
 		}
 	}
 
-	protected virtual void ScaleSideGuard(Node3D guard, float conveyorLineLength) {
-		if (AutoScaleGuards) {
-			guard.Scale = new Vector3(conveyorLineLength, 1f, 1f);
+	/**
+	 * Scale all side guard children of a given node.
+	 *
+	 * This would be a great place to implement proportional scaling and positioning of the guards,
+	 * but currently, we just scale every guard to the length of the whole line and leave its position alone.
+	 *
+	 * @param guardLine The parent of the side guards.
+	 * @param conveyorLineLength The length of the conveyor line to scale to. Ignored if AutoScaleGuards is false.
+	 */
+	private void ScaleSideGuardLine(Node3D guardLine, float conveyorLineLength) {
+		foreach (Node child in guardLine.GetChildren()) {
+			Node3D child3d = child as Node3D;
+			if (IsSideGuard(child3d)) {
+				SetEditableInstance(child3d, true);
+				ScaleSideGuard(child3d, conveyorLineLength);
+			}
 		}
 	}
 
+	private bool IsSideGuard(Node node) {
+		return node as SideGuard != null || node as SideGuardCBC != null;
+	}
+
+	protected virtual void ScaleSideGuard(Node3D guard, float guardLength) {
+		if (AutoScaleGuards) {
+			guard.Scale = new Vector3(guardLength, 1f, 1f);
+		}
+	}
+	#endregion Conveyor and Side Guard scaling / Common
+
+	#region Conveyor and Side Guard scaling / LeftSide and RightSide nodes
 	private void UpdateSides()
 	{
 		UpdateSide(rightSide, true);
@@ -220,36 +268,26 @@ public partial class ConveyorAssembly : Node3D
 	}
 
 	private void UpdateSide(Node3D side, bool isRight) {
-		if (side == null || conveyors == null)
-		{
+		if (side == null || conveyors == null) {
 			return;
 		}
+		LockSidePosition(side, isRight);
+		var conveyorLineLength = GetConveyorLineLength();
+		ScaleSideGuardLine(side, conveyorLineLength);
+		// This would be a great place to implement proportional positioning of other Node3Ds attached to sides when the assembly scales.
+	}
 
+	private void LockSidePosition(Node3D side, bool isRight) {
 		// Sides always snap onto the conveyor line
 		side.Transform = conveyors.Transform;
 		var offsetZ = (isRight? -1 : 1) * side.Basis.Z * (this.Scale.Z - 1f);
 		side.Position += offsetZ;
-
-		if (!AutoScaleGuards) {
-			return;
-		}
-
-		var conveyorLineLength = GetConveyorLineLength();
-
-		foreach (Node child in side.GetChildren()) {
-			Node3D guard = child as Node3D;
-			if (guard == null) {
-				continue;
-			}
-			// TODO scale x position of all items here
-			// TODO proportional scaling of the guards
-			if (IsSideGuard(guard)) {
-				SetEditableInstance(guard, true);
-				ScaleSideGuard(guard, conveyorLineLength);
-			}
-		}
 	}
+	#endregion Conveyor and Side Guard scaling / LeftSide and RightSide nodes
+	#endregion Conveyor and Side Guard scaling
 
+	#region Leg Stands
+	#region Leg Stands / Conveyor Coverage
 	private void UpdateLegStandCoverage() {
 		(legStandCoverageMinPrev, legStandCoverageMaxPrev) = (legStandCoverageMin, legStandCoverageMax);
 		(legStandCoverageMin, legStandCoverageMax) = GetLegStandCoverage();
@@ -277,7 +315,9 @@ public partial class ConveyorAssembly : Node3D
 		// Round to avoid floating point errors.
 		return ((float) Math.Round(min, ROUNDING_DIGITS), (float) Math.Round(max, ROUNDING_DIGITS));
 	}
+	#endregion Leg Stands, Conveyor Coverage
 
+	#region Leg Stands / Entry
 	private void UpdateLegStands()
 	{
 		if (legStands == null)
@@ -303,14 +343,14 @@ public partial class ConveyorAssembly : Node3D
 			|| legStandCoverageMin != legStandCoverageMinPrev
 			|| legStandCoverageMax != legStandCoverageMaxPrev;
 		if (autoLegStandsUpdateIsNeeded) {
-			// GD.Print("Updating leg stands. Reason: ", AutoLegStandsUseInterval != autoLegStandsUseIntervalPrev
-			// , AutoLegStandsInterval != autoLegStandsIntervalPrev
-			// , AutoLegStandsFixedFrontLeg != autoLegStandsFixedFrontLegPrev
-			// , AutoLegStandsFixedRearLeg != autoLegStandsFixedRearLegPrev
-			// , AutoLegStandsFixedLegMargin != autoLegStandsFixedLegMarginPrev
-			// , AutoLegStandsModelScene != autoLegStandsModelScenePrev
-			// , legStandCoverageMin != legStandCoverageMinPrev
-			// , legStandCoverageMax != legStandCoverageMaxPrev);
+			//GD.Print("Updating leg stands. Reason: ", AutoLegStandsUseInterval != autoLegStandsUseIntervalPrev
+			//, AutoLegStandsInterval != autoLegStandsIntervalPrev
+			//, AutoLegStandsFixedFrontLeg != autoLegStandsFixedFrontLegPrev
+			//, AutoLegStandsFixedRearLeg != autoLegStandsFixedRearLegPrev
+			//, AutoLegStandsFixedLegMargin != autoLegStandsFixedLegMarginPrev
+			//, AutoLegStandsModelScene != autoLegStandsModelScenePrev
+			//, legStandCoverageMin != legStandCoverageMinPrev
+			//, legStandCoverageMax != legStandCoverageMaxPrev);
 			AdjustAutoLegStandPositions();
 			CreateAndRemoveAutoLegStands();
 		}
@@ -321,7 +361,7 @@ public partial class ConveyorAssembly : Node3D
 		// Always align LegStands group with Conveyors group.
 		if (conveyors != null) {
 			legStands.Position = new Vector3(legStands.Position.X, legStands.Position.Y, conveyors.Position.Z);
-			// TODO rotation is funky now
+			// Conveyors can't rotate anymore, so this doesn't do much.
 			legStands.Rotation = new Vector3(0f, conveyors.Rotation.Y, 0f);
 		}
 	}
@@ -341,7 +381,9 @@ public partial class ConveyorAssembly : Node3D
 			}
 		}
 	}
+	#endregion Leg Stands / Entry
 
+	#region Leg Stands / Basic constraints
 	private void SnapAllLegStandsToPath() {
 		// Force legStand alignment with LegStands group.
 		float targetWidth = GetLegStandTargetWitdh();
@@ -384,7 +426,9 @@ public partial class ConveyorAssembly : Node3D
 		legStand.Position = new Vector3(position, legStand.Position.Y, 0f);
 		legStand.Rotation = new Vector3(0f, 0f, legStand.Rotation.Z);
 	}
+	#endregion Leg Stands / Basic constraints
 
+	#region Leg Stands / Managing auto-instanced leg stands
 	private void AdjustAutoLegStandPositions() {
 		// Don't allow tiny or negative intervals.
 		AutoLegStandsIntervalLegsInterval = Mathf.Max(0.5f, AutoLegStandsIntervalLegsInterval);
@@ -495,7 +539,9 @@ public partial class ConveyorAssembly : Node3D
 			}
 		}
 	}
+	#endregion Leg Stands / Managing auto-instanced leg stands
 
+	#region Leg Stands / Auto-height and visibility
 	private void UpdateLegStandsHeightAndVisibility() {
 		// Extend LegStands to Conveyor line.
 		if (conveyors == null)
@@ -530,4 +576,6 @@ public partial class ConveyorAssembly : Node3D
 			legStand.Visible = legStandCoverageMin <= tipPosition && tipPosition <= legStandCoverageMax;
 		}
 	}
+	#endregion Leg Stands / Auto-height and visibility
+	#endregion Leg Stands
 }
