@@ -456,12 +456,12 @@ public partial class ConveyorAssembly : Node3D
 				continue;
 			}
 			// Handle front and rear legs first.
-			if (AutoLegStandsEndLegFront && legStand.Position.X == legStandCoverageMinPrev) {
-				legStand.Position = new Vector3(legStandCoverageMin, legStand.Position.Y, 0f);
+			if (AutoLegStandsEndLegFront && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMinPrev) {
+				MoveLegStandToPathPosition(legStand, legStandCoverageMin);
 				continue;
 			}
-			if (AutoLegStandsEndLegRear && legStand.Position.X == legStandCoverageMaxPrev) {
-				legStand.Position = new Vector3(legStandCoverageMax, legStand.Position.Y, 0f);
+			if (AutoLegStandsEndLegRear && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMaxPrev) {
+				MoveLegStandToPathPosition(legStand, legStandCoverageMax);
 				continue;
 			}
 			// Update leg stand position to the new interval.
