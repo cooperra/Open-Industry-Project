@@ -425,14 +425,44 @@ public partial class ConveyorAssembly : Node3D
 		return this.Scale.Z;
 	}
 
+	/**
+	 * Snap a child leg stand to a position on the leg stands path.
+	 *
+	 * The leg stands path is a surface parallel to `legStands` Y axis.
+	 * It represents any position that the conveyor line would be directly above or below at some length.
+	 * For straight assemblies, this is `legStands` XY plane.
+	 * For curved assemblies, this is overridden to be a cylinder centered on `legStands`.
+	 *
+	 * @param legStand The leg stand to reposition.
+	 */
 	private void SnapToLegStandsPath(Node3D legStand) {
 		MoveLegStandToPathPosition(legStand, GetPositionOnLegStandsPath(legStand.Position));
 	}
 
+	/**
+	 * Get the path position of a point projected onto the leg stands path.
+	 *
+	 * The path position is a linear representation of where a point is on the leg stands path.
+	 * For straight assemblies, this is the X coordinate of the point.
+	 * For curved assemblies, this is an angle of the point around the leg stands Y axis in degrees.
+	 *
+	 * @param position The point to project onto the leg stands path.
+	 * @return The point's path position.
+	 */
 	protected virtual float GetPositionOnLegStandsPath(Vector3 position) {
 		return position.X;
 	}
 
+	/**
+	 * Move a leg stand to a given position on the leg stands path.
+	 *
+	 * The leg stand is moved and rotated to align with the path.
+	 * The leg stand keeps its Y position and Z rotation.
+	 * Curved assemblies override this and don't keep the Z rotation.
+	 *
+	 * @param legStand The leg stand to move.
+	 * @param position The path position to move the leg stand to.
+	 */
 	protected virtual void MoveLegStandToPathPosition(Node3D legStand, float position) {
 		legStand.Position = new Vector3(position, legStand.Position.Y, 0f);
 		legStand.Rotation = new Vector3(0f, 0f, legStand.Rotation.Z);
