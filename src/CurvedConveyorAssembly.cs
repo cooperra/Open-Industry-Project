@@ -11,7 +11,8 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 
 	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
 		// Hide unused properties.
-		if (property["name"].AsStringName() == PropertyName.AutoScaleConveyors
+		if (property["name"].AsStringName() == PropertyName.ConveyorAngle
+			|| property["name"].AsStringName() == PropertyName.AutoScaleConveyors
 			|| property["name"].AsStringName() == PropertyName.AutoScaleGuards) {
 			property["usage"] = (int) PropertyUsageFlags.NoEditor;
 		}
