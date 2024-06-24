@@ -570,7 +570,7 @@ public partial class ConveyorAssembly : Node3D
 				continue;
 			}
 			// Only adjust leg stands that we created.
-			if (legStand.Owner != this) {
+			if (legStand.Owner != GetTree().GetEditedSceneRoot()) { // FIXME this is too broad now
 				continue;
 			}
 			// Handle front and rear legs first.
@@ -664,7 +664,7 @@ public partial class ConveyorAssembly : Node3D
 		ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
 		MoveLegStandToPathPosition(legStand, position);
 		legStands.AddChild(legStand, forceReadableName: true);
-		legStand.Owner = this;
+		legStand.Owner = GetTree().GetEditedSceneRoot();
 		return legStand;
 	}
 	#endregion Leg Stands / Managing auto-instanced leg stands
