@@ -10,7 +10,7 @@ public partial class Rollers : Node3D
 		
 	RollerConveyor owner;
 
-	int uneditableRollerCount;
+	int initialForeignRollerCount;
 
     public void ChangeScale(float scale)
     {
@@ -19,14 +19,14 @@ public partial class Rollers : Node3D
         int desiredRollerCount = roundedScale - 2;
 
         int difference = desiredRollerCount - rollerCount;
-        int uneditableRollersMissing = uneditableRollerCount - rollerCount;
+        int foreignRollersMissing = initialForeignRollerCount - rollerCount;
 
         if (difference > 0) 
         {
             for (int i = 0; i < difference; i++)
             {
-                bool persist = i >= uneditableRollersMissing;
-                SpawnRoller(persist);
+                bool foreign = i < foreignRollersMissing;
+                SpawnRoller(foreign);
             }
         }
         else if (difference < 0) 
@@ -43,7 +43,7 @@ public partial class Rollers : Node3D
 	{
 		owner = GetParent() as RollerConveyor;
 
-		uneditableRollerCount = GetUneditableRollerCount();
+		initialForeignRollerCount = GetForeignRollerCount();
 
 		FixRollers();
 	}
@@ -56,12 +56,12 @@ public partial class Rollers : Node3D
 		}
 	}
 
-		void SpawnRoller(bool persist = true)
+		void SpawnRoller(bool foreign = false)
 	{
 		if (GetParent() == null || owner == null) return;
 		Roller roller = rollerScene.Instantiate() as Roller;
         AddChild(roller, forceReadableName: true);
-		roller.Owner = persist ? GetTree().GetEditedSceneRoot() : owner;
+		roller.Owner = foreign ? owner : GetTree().GetEditedSceneRoot();
         roller.Position = new Vector3(rollersDistance * GetChildCount(), 0, 0);
 		roller.speed = owner.Speed;
 		roller.RotationDegrees = new Vector3(roller.RotationDegrees.X, owner.SkewAngle, roller.RotationDegrees.Z);
@@ -74,7 +74,7 @@ public partial class Rollers : Node3D
 		((Roller)GetChild(0)).Position = new Vector3(rollersDistance, 0, 0);
 	}
 
-	int GetUneditableRollerCount()
+	int GetForeignRollerCount()
 	{
 		int count = 0;
 		Node editedScene = GetTree().GetEditedSceneRoot();
