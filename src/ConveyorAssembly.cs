@@ -1,10 +1,21 @@
 using Godot;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 [Tool]
 public partial class ConveyorAssembly : Node3D
 {
+	#region Constants
 	private const int ROUNDING_DIGITS = 3;
+	private const string AUTO_LEG_STAND_NAME_PREFIX = "AutoLegsStand";
+	private const string AUTO_LEG_STAND_NAME_FRONT = "AutoLegsStandFront";
+	private const string AUTO_LEG_STAND_NAME_REAR = "AutoLegsStandRear";
+	private const int LEG_INDEX_FRONT = -1;
+	private const int LEG_INDEX_REAR = -2;
+	private const int LEG_INDEX_NON_AUTO = -3;
+	#endregion Constants
+
 	#region Fields
 	#region Fields / Nodes
 	protected Node3D conveyors;
@@ -71,6 +82,9 @@ public partial class ConveyorAssembly : Node3D
 	private float legStandCoverageMinPrev;
 	private float legStandCoverageMaxPrev;
 	#endregion Fields / Leg stand coverage
+
+	// This variable is used to store the names of the pre-existing leg stands that can't be owned by the edited scene.
+	private Dictionary <StringName, Node> foreignLegStandsOwners = new();
 	#endregion Fields
 
 	#region _Ready and _PhysicsProcess
@@ -104,10 +118,14 @@ public partial class ConveyorAssembly : Node3D
 		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
 		UpdateLegStandCoverage();
 
-		// All existing leg stands that we own must be regenerated. We can't trust them remain correct.
-		// ^ The above claim might not be true now that we SetEditableInstance(legStand, true) on all our leg stands.
-		// Still, deleting all the leg stands is safer until we're certain that there won't be issues.
-		DeleteSelfOwnedLegStands();
+		if (legStands != null) {
+			Node editedScene = GetTree().GetEditedSceneRoot();
+			foreach (Node legStand in legStands.GetChildren()) {
+				if (legStand.Owner != editedScene) {
+					foreignLegStandsOwners[legStand.Name] = legStand.Owner;
+				}
+			}
+		}
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -365,8 +383,8 @@ public partial class ConveyorAssembly : Node3D
 		if (legStands == null || conveyors == null) {
 			return (0f, 0f);
 		}
-		var min = float.MaxValue;
-		var max = float.MinValue;
+		float min = float.MaxValue;
+		float max = float.MinValue;
 		foreach (Node child in conveyors.GetChildren()) {
 			Node3D conveyor = child as Node3D;
 			if (IsConveyor(conveyor)) {
@@ -398,7 +416,7 @@ public partial class ConveyorAssembly : Node3D
 
 		// If the leg stand scene changes, we need to regenerate everything.
 		if (AutoLegStandsModelScene != autoLegStandsModelScenePrev) {
-			DeleteSelfOwnedLegStands();
+			DeleteAllAutoLegStands();
 		}
 
 		SnapAllLegStandsToPath();
@@ -412,11 +430,11 @@ public partial class ConveyorAssembly : Node3D
 			|| legStandCoverageMin != legStandCoverageMinPrev
 			|| legStandCoverageMax != legStandCoverageMaxPrev;
 		if (autoLegStandsUpdateIsNeeded) {
-			//GD.Print("Updating leg stands. Reason: ", AutoLegStandsUseInterval != autoLegStandsUseIntervalPrev
-			//, AutoLegStandsInterval != autoLegStandsIntervalPrev
-			//, AutoLegStandsFixedFrontLeg != autoLegStandsFixedFrontLegPrev
-			//, AutoLegStandsFixedRearLeg != autoLegStandsFixedRearLegPrev
-			//, AutoLegStandsFixedLegMargin != autoLegStandsFixedLegMarginPrev
+			//GD.Print("Updating leg stands. Reason: ", AutoLegStandsIntervalLegsEnabled != autoLegStandsIntervalLegsEnabledPrev
+			//, AutoLegStandsIntervalLegsInterval != autoLegStandsIntervalLegsIntervalPrev
+			//, AutoLegStandsEndLegFront != autoLegStandsEndLegFrontPrev
+			//, AutoLegStandsEndLegRear != autoLegStandsEndLegRearPrev
+			//, AutoLegStandsMarginEndLegs != autoLegStandsMarginEndLegsPrev
 			//, AutoLegStandsModelScene != autoLegStandsModelScenePrev
 			//, legStandCoverageMin != legStandCoverageMinPrev
 			//, legStandCoverageMax != legStandCoverageMaxPrev);
@@ -465,27 +483,27 @@ public partial class ConveyorAssembly : Node3D
 		legStandsTransformPrev = legStands.Transform;
 	}
 
-	private void DeleteSelfOwnedLegStands() {
+	private void DeleteAllAutoLegStands() {
 		if (legStands == null) {
 			return;
 		}
 		foreach (Node child in legStands.GetChildren()) {
-			ConveyorLeg legStand = child as ConveyorLeg;
-			if (legStand == null) {
-				continue;
-			}
-			if (legStand.Owner == this) {
-				legStands.RemoveChild(legStand);
-				legStand.QueueFree();
+			if (IsAutoLegStand(child)) {
+				legStands.RemoveChild(child);
+				child.QueueFree();
 			}
 		}
+	}
+
+	private bool IsAutoLegStand(Node node) {
+		return GetAutoLegStandIndex(node.Name) != LEG_INDEX_NON_AUTO;
 	}
 	#endregion Leg Stands / Update "LegStands" node
 
 	#region Leg Stands / Basic constraints
 	private void SnapAllLegStandsToPath() {
 		// Force legStand alignment with LegStands group.
-		float targetWidth = GetLegStandTargetWitdh();
+		float targetWidth = GetLegStandTargetWidth();
 		foreach (Node child in legStands.GetChildren()) {
 			ConveyorLeg legStand = child as ConveyorLeg;
 			if (legStand == null) {
@@ -497,7 +515,7 @@ public partial class ConveyorAssembly : Node3D
 
 	}
 
-	private float GetLegStandTargetWitdh() {
+	private float GetLegStandTargetWidth() {
 		Node3D firstConveyor = null;
 		foreach (Node child in conveyors.GetChildren()) {
 			Node3D conveyor = child as Node3D;
@@ -558,6 +576,9 @@ public partial class ConveyorAssembly : Node3D
 	#endregion Leg Stands / Basic constraints
 
 	#region Leg Stands / Managing auto-instanced leg stands
+	/**
+	 * Adjust the positions of all auto-instanced leg stands to match changed settings or coverage.
+	 */
 	private void AdjustAutoLegStandPositions() {
 		// Don't allow tiny or negative intervals.
 		AutoLegStandsIntervalLegsInterval = Mathf.Max(0.5f, AutoLegStandsIntervalLegsInterval);
@@ -565,78 +586,125 @@ public partial class ConveyorAssembly : Node3D
 			return;
 		}
 		foreach (Node child in legStands.GetChildren()) {
-			ConveyorLeg legStand = child as ConveyorLeg;
-			if (legStand == null) {
+			if (child is not ConveyorLeg legStand) {
 				continue;
 			}
-			// Only adjust leg stands that we created.
-			if (legStand.Owner != GetTree().GetEditedSceneRoot()) { // FIXME this is too broad now
-				continue;
+			int legStandIndex = GetAutoLegStandIndex(legStand.Name);
+			switch (legStandIndex) {
+				case LEG_INDEX_NON_AUTO:
+					// Only adjust auto leg stands.
+					break;
+				default:
+					// Update leg stand position to the new interval.
+					MoveLegStandToPathPosition(legStand, GetAutoLegStandPosition(legStandIndex));
+					break;
 			}
-			// Handle front and rear legs first.
-			if (AutoLegStandsEndLegFront && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMinPrev) {
-				MoveLegStandToPathPosition(legStand, legStandCoverageMin);
-				continue;
-			}
-			if (AutoLegStandsEndLegRear && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMaxPrev) {
-				MoveLegStandToPathPosition(legStand, legStandCoverageMax);
-				continue;
-			}
-			// Update leg stand position to the new interval.
-			int legStandIndex = (int) Mathf.Round(GetPositionOnLegStandsPath(legStand.Position) / autoLegStandsIntervalLegsIntervalPrev);
-			MoveLegStandToPathPosition(legStand, (float) Math.Round(legStandIndex * AutoLegStandsIntervalLegsInterval, ROUNDING_DIGITS));
 		}
-
 		autoLegStandsIntervalLegsIntervalPrev = AutoLegStandsIntervalLegsInterval;
+	}
+
+	private int GetAutoLegStandIndex(StringName name) {
+		if (name.Equals(new StringName(AUTO_LEG_STAND_NAME_FRONT))) {
+			return LEG_INDEX_FRONT;
+		}
+		if (name.Equals(new StringName(AUTO_LEG_STAND_NAME_REAR))) {
+			return LEG_INDEX_REAR;
+		}
+		if (name.ToString().StartsWith(AUTO_LEG_STAND_NAME_PREFIX) &&
+			int.TryParse(name.ToString().AsSpan(AUTO_LEG_STAND_NAME_PREFIX.Length), out int legStandIndex)) {
+			// Names start at 1, but indices start at 0.
+			return legStandIndex - 1;
+		}
+		return LEG_INDEX_NON_AUTO;
+	}
+
+	/**
+	 * Get the correct path position of an auto-instanced leg stand.
+	 *
+	 * If the index is high, it's possible that the position will be outside the coverage range.
+	 *
+	 * @param index The index of an interval aligned leg stand or LEG_INDEX_FRONT or LEG_INDEX_REAR for fixed legs.
+	 */
+	private float GetAutoLegStandPosition(int index) {
+		if (index == LEG_INDEX_FRONT) {
+			return legStandCoverageMin;
+		}
+		if (index == LEG_INDEX_REAR) {
+			return legStandCoverageMax;
+		}
+		return GetIntervalLegStandPosition(index);
+	}
+
+
+	/**
+	 * Get the correct path position of an interval aligned leg stand.
+	 *
+	 * If the index is high, it's possible that the position will be outside the coverage range.
+	 *
+	 * @param index The index of the leg stand, starting with the first covered one.
+	 */
+	private float GetIntervalLegStandPosition(int index) {
+		Debug.Assert(index >= 0);
+		float frontMargin = AutoLegStandsEndLegFront ? AutoLegStandsMarginEndLegs : 0f;
+		float firstPosition = (float) Math.Ceiling((legStandCoverageMin + frontMargin) / AutoLegStandsIntervalLegsInterval) * AutoLegStandsIntervalLegsInterval;
+		return firstPosition + index * AutoLegStandsIntervalLegsInterval;
 	}
 
 	private void CreateAndRemoveAutoLegStands() {
 		// Don't allow negative margins.
 		AutoLegStandsMarginEndLegs = Mathf.Max(0f, AutoLegStandsMarginEndLegs);
 		// Enforce a margin from fixed front and rear legs if they exist.
-		float frontMargin = AutoLegStandsEndLegFront ? AutoLegStandsMarginEndLegs : 0f;
+		float firstPosition = GetIntervalLegStandPosition(0);
 		float rearMargin = AutoLegStandsEndLegRear ? AutoLegStandsMarginEndLegs : 0f;
-		float firstPosition = (float) Math.Ceiling((legStandCoverageMin + frontMargin) / AutoLegStandsIntervalLegsInterval) * AutoLegStandsIntervalLegsInterval;
 		float lastPosition = (float) Math.Floor((legStandCoverageMax - rearMargin) / AutoLegStandsIntervalLegsInterval) * AutoLegStandsIntervalLegsInterval;
 		int intervalLegStandCount;
-		if (firstPosition > lastPosition) {
+		if (!AutoLegStandsIntervalLegsEnabled) {
+			intervalLegStandCount = 0;
+		} else if (firstPosition > lastPosition) {
 			// Invalid range implies zero interval-aligned leg stands are needed.
 			intervalLegStandCount = 0;
 		} else {
 			intervalLegStandCount = (int) ((lastPosition - firstPosition) / AutoLegStandsIntervalLegsInterval) + 1;
 		}
 		// Inventory our existing leg stands and delete the ones we don't need.
-		var hasFrontLeg = false;
-		var hasRearLeg = false;
-		ConveyorLeg[] legStandsInventory = new ConveyorLeg[intervalLegStandCount];
+		bool hasFrontLeg = false;
+		bool hasRearLeg = false;
+		bool[] legStandsInventory = new bool[intervalLegStandCount];
 		foreach (Node child in legStands.GetChildren()) {
-			ConveyorLeg legStand = child as ConveyorLeg;
-			if (legStand == null) {
+			if (child is not ConveyorLeg legStand) {
 				continue;
 			}
-			// Only manage leg stands that we created.
-			if (legStand.Owner != this) {
-				continue;
-			}
-			// Ignore existing front and rear legs.
-			var isFrontLeg = AutoLegStandsEndLegFront && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMin;
-			var isRearLeg = AutoLegStandsEndLegRear && GetPositionOnLegStandsPath(legStand.Position) == legStandCoverageMax;
-			if (isFrontLeg || isRearLeg) {
-				hasFrontLeg = hasFrontLeg || isFrontLeg;
-				hasRearLeg = hasRearLeg || isRearLeg;
-				continue;
-			}
-			if (AutoLegStandsIntervalLegsEnabled) {
-				// Delete leg stands that are not in the new interval.
-				if (GetPositionOnLegStandsPath(legStand.Position) < firstPosition || GetPositionOnLegStandsPath(legStand.Position) > lastPosition) {
+			int legStandIndex = GetAutoLegStandIndex(legStand.Name);
+			switch (legStandIndex) {
+				case LEG_INDEX_NON_AUTO:
+					// Only manage auto leg stands.
+					break;
+				case LEG_INDEX_FRONT:
+					if (AutoLegStandsEndLegFront) {
+						hasFrontLeg = true;
+					} else {
+						legStands.RemoveChild(legStand);
+						legStand.QueueFree();
+					}
+					break;
+				case LEG_INDEX_REAR:
+					if (AutoLegStandsEndLegRear) {
+						hasRearLeg = true;
+					} else {
+						legStands.RemoveChild(legStand);
+						legStand.QueueFree();
+					}
+					break;
+				default:
+					// Mark existing leg stands that are in the new interval.
+					if (legStandIndex < intervalLegStandCount && AutoLegStandsIntervalLegsEnabled) {
+						legStandsInventory[legStandIndex] = true;
+						break;
+					}
+					// Delete leg stands that are outside the new interval.
+					legStands.RemoveChild(legStand);
 					legStand.QueueFree();
-				} else {
-					// Store leg stands that are in the new interval.
-					legStandsInventory[(int) Math.Round((GetPositionOnLegStandsPath(legStand.Position) - firstPosition) / AutoLegStandsIntervalLegsInterval)] = legStand;
-				}
-			} else {
-				// Delete all interval leg stands if we're not using intervals.
-				legStand.QueueFree();
+					break;
 			}
 		}
 
@@ -645,26 +713,54 @@ public partial class ConveyorAssembly : Node3D
 			return;
 		}
 		if (!hasFrontLeg && AutoLegStandsEndLegFront) {
-			AddLegStandInstance(legStandCoverageMin);
-		}
-		if (!hasRearLeg && AutoLegStandsEndLegRear) {
-			AddLegStandInstance(legStandCoverageMax);
-		}
-		if (!AutoLegStandsIntervalLegsEnabled) {
-			return;
+			AddLegStandAtIndex(LEG_INDEX_FRONT);
 		}
 		for (int i = 0; i < intervalLegStandCount; i++) {
-			if (legStandsInventory[i] == null) {
-				AddLegStandInstance((float) Math.Round(firstPosition + i * AutoLegStandsIntervalLegsInterval, ROUNDING_DIGITS));
+			if (!legStandsInventory[i]) {
+				AddLegStandAtIndex(i);
 			}
+		}
+		if (!hasRearLeg && AutoLegStandsEndLegRear) {
+			AddLegStandAtIndex(LEG_INDEX_REAR);
 		}
 	}
 
-	private Node3D AddLegStandInstance(float position) {
-		ConveyorLeg legStand = AutoLegStandsModelScene.Instantiate() as ConveyorLeg;
+	private ConveyorLeg AddLegStandAtIndex(int index) {
+		float position = GetAutoLegStandPosition(index);
+		StringName name = index switch
+		{
+			LEG_INDEX_FRONT => (StringName)AUTO_LEG_STAND_NAME_FRONT,
+			LEG_INDEX_REAR => (StringName)AUTO_LEG_STAND_NAME_REAR,
+			// Indices start at 0, but names start at 1.
+			_ => (StringName)(AUTO_LEG_STAND_NAME_PREFIX + (index + 1).ToString()),
+		};
+		ConveyorLeg legStand = AddOrGetLegStandInstance(name) as ConveyorLeg;
 		MoveLegStandToPathPosition(legStand, position);
-		legStands.AddChild(legStand, forceReadableName: true);
-		legStand.Owner = GetTree().GetEditedSceneRoot();
+
+		// It probably doesn't matter, but let's try to keep leg stands in order.
+		int trueIndex = index switch {
+			LEG_INDEX_FRONT => 0,
+			LEG_INDEX_REAR => -1,
+			_ => AutoLegStandsEndLegFront ? index + 1 : index,
+		};
+		if (trueIndex < legStands.GetChildCount()) {
+			legStands.MoveChild(legStand, trueIndex);
+		}
+		return legStand;
+	}
+
+	private Node AddOrGetLegStandInstance(StringName name) {
+		Node legStand = legStands.GetNodeOrNull<Node>(new NodePath(name));
+		if (legStand != null) {
+			return legStand;
+		}
+		legStand = AutoLegStandsModelScene.Instantiate();
+		legStand.Name = name;
+		legStands.AddChild(legStand);
+		// If the leg stand used to exist, restore its original owner.
+		legStand.Owner = foreignLegStandsOwners.TryGetValue(name, out Node originalOwner)
+			? originalOwner
+			: GetTree().GetEditedSceneRoot();
 		return legStand;
 	}
 	#endregion Leg Stands / Managing auto-instanced leg stands
