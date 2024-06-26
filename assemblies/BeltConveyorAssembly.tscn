@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=4 uid="uid://bqlkj4ar8q1ws"]
+[gd_scene load_steps=30 format=4 uid="uid://bqlkj4ar8q1ws"]
 
 [ext_resource type="Script" path="res://src/ConveyorAssembly.cs" id="1_au6en"]
 [ext_resource type="PackedScene" uid="uid://dm55h6ap605bw" path="res://parts/BeltConveyor.tscn" id="2_kdap4"]
@@ -6,16 +6,9 @@
 [ext_resource type="Shader" uid="uid://bejqoybamob1y" path="res://assets/3DModels/Shaders/BeltShader.tres" id="3_kusy2"]
 [ext_resource type="PackedScene" uid="uid://cr8u3bta0skiy" path="res://parts/ConveyorLegBC.tscn" id="4_aq24s"]
 [ext_resource type="Shader" uid="uid://lg3xcvqgjhjj" path="res://assets/3DModels/Shaders/MetalShader.tres" id="4_h84ar"]
-[ext_resource type="Script" path="res://src/ConveyorLeg/ConveyorLeg.cs" id="5_0q0gm"]
 [ext_resource type="Shader" uid="uid://wtu5yyfpdcgl" path="res://assets/3DModels/Shaders/MetalShaderSideGuard.tres" id="6_kbv1l"]
 [ext_resource type="Material" uid="uid://bhsy5iqi7rvp" path="res://assets/3DModels/Materials/LegsStandMaterial.tres" id="9_sct53"]
-[ext_resource type="Script" path="res://src/ConveyorLeg/LegBars.cs" id="10_ta47l"]
-[ext_resource type="PackedScene" uid="uid://di0tdk31gf2cj" path="res://src/ConveyorLeg/LegBar.tscn" id="11_2je73"]
 [ext_resource type="Shader" uid="uid://b6uso6bqiurpv" path="res://assets/3DModels/Shaders/MetalShaderLegsBar.tres" id="12_jgtyw"]
-[ext_resource type="Script" path="res://src/ConveyorLeg/LegBar.cs" id="13_enmi1"]
-[ext_resource type="ArrayMesh" uid="uid://cmn68cn6wtklk" path="res://assets/3DModels/Meshes/LegsGrab_Top.res" id="14_mcxca"]
-[ext_resource type="ArrayMesh" uid="uid://bv81koohc3tyu" path="res://assets/3DModels/Meshes/LegsTop_Side_001.res" id="15_6gq3u"]
-[ext_resource type="ArrayMesh" uid="uid://dtrn761bti77o" path="res://assets/3DModels/Meshes/LegsBottom_Bottom.res" id="16_74hg1"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ki0b1"]
 render_priority = 0
@@ -392,165 +385,99 @@ transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="AutoLegsStandFront" parent="LegStands" instance=ExtResource("4_aq24s")]
 transform = Transform3D(1, 0, 0, 0, 1.61792, 0, 0, 0, 1, -1.8, 0, 0)
-script = ExtResource("5_0q0gm")
 
 [node name="LegsSide1" parent="LegStands/AutoLegsStandFront/Sides" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
 mesh = SubResource("ArrayMesh_ygivf")
-skeleton = NodePath("")
 
 [node name="LegsSide2" parent="LegStands/AutoLegsStandFront/Sides" index="1"]
 transform = Transform3D(-1, 0, 1.50996e-07, 0, 1, 0, -1.50996e-07, 0, -1, 0, 0, 1)
 mesh = SubResource("ArrayMesh_ygivf")
-skeleton = NodePath("")
 
 [node name="LegsBars" parent="LegStands/AutoLegsStandFront" index="1"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 0, 0)
-script = ExtResource("10_ta47l")
-legsBarScene = ExtResource("11_2je73")
 ParentScale = 1.61792
 
 [node name="LegsBar" parent="LegStands/AutoLegsStandFront/LegsBars" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("ArrayMesh_w7wrf")
-skeleton = NodePath("")
-script = ExtResource("13_enmi1")
 
 [node name="LegsTop1" parent="LegStands/AutoLegsStandFront/Ends" index="0"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 1, -1)
-mesh = ExtResource("15_6gq3u")
-skeleton = NodePath("")
-
-[node name="LegsGrab1" parent="LegStands/AutoLegsStandFront/Ends/LegsTop1" index="0"]
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
 
 [node name="LegsTop2" parent="LegStands/AutoLegsStandFront/Ends" index="1"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 1, 1)
-mesh = ExtResource("15_6gq3u")
-skeleton = NodePath("")
 
 [node name="LegsGrab2" parent="LegStands/AutoLegsStandFront/Ends/LegsTop2" index="0"]
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
+transform = Transform3D(1, 0, -6.3573e-08, 0, 1, 0, 6.3573e-08, 0, 1, 0, 0, 0)
 
 [node name="LegsBottom1" parent="LegStands/AutoLegsStandFront/Ends" index="2"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 0, -1)
-mesh = ExtResource("16_74hg1")
-skeleton = NodePath("")
 
 [node name="LegsBottom2" parent="LegStands/AutoLegsStandFront/Ends" index="3"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 0, 1)
-mesh = ExtResource("16_74hg1")
-skeleton = NodePath("")
 
 [node name="AutoLegsStand1" parent="LegStands" instance=ExtResource("4_aq24s")]
 transform = Transform3D(1, 0, 0, 0, 1.61792, 0, 0, 0, 1, 0, 0, 0)
-script = ExtResource("5_0q0gm")
 
 [node name="LegsSide1" parent="LegStands/AutoLegsStand1/Sides" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
 mesh = SubResource("ArrayMesh_huecj")
-skeleton = NodePath("")
 
 [node name="LegsSide2" parent="LegStands/AutoLegsStand1/Sides" index="1"]
 transform = Transform3D(-1, 0, 1.50996e-07, 0, 1, 0, -1.50996e-07, 0, -1, 0, 0, 1)
 mesh = SubResource("ArrayMesh_huecj")
-skeleton = NodePath("")
 
 [node name="LegsBars" parent="LegStands/AutoLegsStand1" index="1"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 0, 0)
-script = ExtResource("10_ta47l")
-legsBarScene = ExtResource("11_2je73")
 ParentScale = 1.61792
 
 [node name="LegsBar" parent="LegStands/AutoLegsStand1/LegsBars" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("ArrayMesh_vpa4b")
-skeleton = NodePath("")
-script = ExtResource("13_enmi1")
 
 [node name="LegsTop1" parent="LegStands/AutoLegsStand1/Ends" index="0"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 1, -1)
-mesh = ExtResource("15_6gq3u")
-skeleton = NodePath("")
-
-[node name="LegsGrab1" parent="LegStands/AutoLegsStand1/Ends/LegsTop1" index="0"]
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
 
 [node name="LegsTop2" parent="LegStands/AutoLegsStand1/Ends" index="1"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 1, 1)
-mesh = ExtResource("15_6gq3u")
-skeleton = NodePath("")
 
 [node name="LegsGrab2" parent="LegStands/AutoLegsStand1/Ends/LegsTop2" index="0"]
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
+transform = Transform3D(1, 0, -6.3573e-08, 0, 1, 0, 6.3573e-08, 0, 1, 0, 0, 0)
 
 [node name="LegsBottom1" parent="LegStands/AutoLegsStand1/Ends" index="2"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 0, -1)
-mesh = ExtResource("16_74hg1")
-skeleton = NodePath("")
 
 [node name="LegsBottom2" parent="LegStands/AutoLegsStand1/Ends" index="3"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 0, 1)
-mesh = ExtResource("16_74hg1")
-skeleton = NodePath("")
 
 [node name="AutoLegsStandRear" parent="LegStands" instance=ExtResource("4_aq24s")]
 transform = Transform3D(1, 0, 0, 0, 1.61792, 0, 0, 0, 1, 1.8, 0, 0)
-script = ExtResource("5_0q0gm")
 
 [node name="LegsSide1" parent="LegStands/AutoLegsStandRear/Sides" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
 mesh = SubResource("ArrayMesh_0lm7i")
-skeleton = NodePath("")
 
 [node name="LegsSide2" parent="LegStands/AutoLegsStandRear/Sides" index="1"]
 transform = Transform3D(-1, 0, 1.50996e-07, 0, 1, 0, -1.50996e-07, 0, -1, 0, 0, 1)
 mesh = SubResource("ArrayMesh_0lm7i")
-skeleton = NodePath("")
 
 [node name="LegsBars" parent="LegStands/AutoLegsStandRear" index="1"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 0, 0)
-script = ExtResource("10_ta47l")
-legsBarScene = ExtResource("11_2je73")
 ParentScale = 1.61792
 
 [node name="LegsBar" parent="LegStands/AutoLegsStandRear/LegsBars" index="0"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("ArrayMesh_xpwmt")
-skeleton = NodePath("")
-script = ExtResource("13_enmi1")
 
 [node name="LegsTop1" parent="LegStands/AutoLegsStandRear/Ends" index="0"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 1, -1)
-mesh = ExtResource("15_6gq3u")
-skeleton = NodePath("")
-
-[node name="LegsGrab1" parent="LegStands/AutoLegsStandRear/Ends/LegsTop1" index="0"]
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
 
 [node name="LegsTop2" parent="LegStands/AutoLegsStandRear/Ends" index="1"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 1, 1)
-mesh = ExtResource("15_6gq3u")
-skeleton = NodePath("")
 
 [node name="LegsGrab2" parent="LegStands/AutoLegsStandRear/Ends/LegsTop2" index="0"]
-mesh = ExtResource("14_mcxca")
-skeleton = NodePath("")
+transform = Transform3D(1, 0, -6.3573e-08, 0, 1, 0, 6.3573e-08, 0, 1, 0, 0, 0)
 
 [node name="LegsBottom1" parent="LegStands/AutoLegsStandRear/Ends" index="2"]
 transform = Transform3D(1, 0, 0, 0, 0.618078, 0, 0, 0, 1, 0, 0, -1)
-mesh = ExtResource("16_74hg1")
-skeleton = NodePath("")
 
 [node name="LegsBottom2" parent="LegStands/AutoLegsStandRear/Ends" index="3"]
 transform = Transform3D(-1, 0, -1.50996e-07, 0, 0.618078, 0, 1.50996e-07, 0, -1, 0, 0, 1)
-mesh = ExtResource("16_74hg1")
-skeleton = NodePath("")
 
 [editable path="Conveyors/Conveyor"]
 [editable path="LeftSide/SideGuard"]
