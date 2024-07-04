@@ -7,7 +7,6 @@ using System.Diagnostics;
 public partial class ConveyorAssembly : Node3D
 {
 	#region Constants
-	private const int ROUNDING_DIGITS = 3;
 	private const string AUTO_LEG_STAND_NAME_PREFIX = "AutoLegsStand";
 	private const string AUTO_LEG_STAND_NAME_FRONT = "AutoLegsStandFront";
 	private const string AUTO_LEG_STAND_NAME_REAR = "AutoLegsStandRear";
@@ -398,8 +397,7 @@ public partial class ConveyorAssembly : Node3D
 				max = Mathf.Max(max, Mathf.Max(conveyorExtent2.X, conveyorExtent1.X));
 			}
 		}
-		// Round to avoid floating point errors.
-		return ((float) Math.Round(min, ROUNDING_DIGITS), (float) Math.Round(max, ROUNDING_DIGITS));
+		return (min, max);
 	}
 	#endregion Leg Stands / Conveyor coverage extents
 
