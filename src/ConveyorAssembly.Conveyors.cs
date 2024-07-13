@@ -3,8 +3,8 @@ using System;
 
 public partial class ConveyorAssembly : Node3D
 {
-    #region Scaling Conveyors and Guards
-	#region Scaling Conveyors and Guards / Update "Conveyors" node
+	#region Conveyors
+	#region Conveyors / Update "Conveyors" node
 	private void UpdateConveyors()
 	{
 		if (conveyors == null)
@@ -54,9 +54,9 @@ public partial class ConveyorAssembly : Node3D
 		conveyorAnglePrev = ConveyorAngle;
 		conveyorsTransformPrev = conveyors.Transform;
 	}
-	#endregion Scaling Conveyors and Guards / Update "Conveyors" node
+	#endregion Conveyors / Update "Conveyors" node
 
-	#region Scaling Conveyors and Guards / ScaleConveyorLine
+	#region Conveyors / ScaleConveyorLine
 	/**
 	 * Get the length of the conveyor line.
 	 *
@@ -119,62 +119,6 @@ public partial class ConveyorAssembly : Node3D
 			conveyor.Scale = new Vector3(conveyor.Scale.X, conveyor.Scale.Y, this.Scale.Z);
 		}
 	}
-	#endregion Scaling Conveyors and Guards / ScaleConveyorLine
-
-	#region Scaling Conveyors and Guards / ScaleSideGuardLine
-	/**
-	 * Scale all side guard children of a given node.
-	 *
-	 * This would be a great place to implement proportional scaling and positioning of the guards,
-	 * but currently, we just scale every guard to the length of the whole line and leave its position alone.
-	 *
-	 * @param guardLine The parent of the side guards.
-	 * @param conveyorLineLength The length of the conveyor line to scale to. Ignored if AutoScaleGuards is false.
-	 */
-	private void ScaleSideGuardLine(Node3D guardLine, float conveyorLineLength) {
-		foreach (Node child in guardLine.GetChildren()) {
-			Node3D child3d = child as Node3D;
-			if (IsSideGuard(child3d)) {
-				SetEditableInstance(child3d, true);
-				ScaleSideGuard(child3d, conveyorLineLength);
-			}
-		}
-	}
-
-	private bool IsSideGuard(Node node) {
-		return node as SideGuard != null || node as SideGuardCBC != null;
-	}
-
-	protected virtual void ScaleSideGuard(Node3D guard, float guardLength) {
-		if (AutoScaleGuards) {
-			guard.Scale = new Vector3(guardLength, 1f, 1f);
-		}
-	}
-	#endregion Scaling Conveyors and Guards / ScaleSideGuardLine
-
-	#region Scaling Conveyors and Guards / Update "LeftSide" and "RightSide" nodes
-	private void UpdateSides()
-	{
-		UpdateSide(rightSide, true);
-		UpdateSide(leftSide, false);
-	}
-
-	private void UpdateSide(Node3D side, bool isRight) {
-		if (side == null || conveyors == null) {
-			return;
-		}
-		LockSidePosition(side, isRight);
-		var conveyorLineLength = GetConveyorLineLength();
-		ScaleSideGuardLine(side, conveyorLineLength);
-		// This would be a great place to implement proportional positioning of other Node3Ds attached to sides when the assembly scales.
-	}
-
-	private void LockSidePosition(Node3D side, bool isRight) {
-		// Sides always snap onto the conveyor line
-		side.Transform = conveyors.Transform;
-		var offsetZ = (isRight? -1 : 1) * side.Basis.Z * (this.Scale.Z - 1f);
-		side.Position += offsetZ;
-	}
-	#endregion Scaling Conveyors and Guards / Update "LeftSide" and "RightSide" nodes
-	#endregion Scaling Conveyors and Guards
+	#endregion Conveyors / ScaleConveyorLine
+	#endregion Conveyors
 }
