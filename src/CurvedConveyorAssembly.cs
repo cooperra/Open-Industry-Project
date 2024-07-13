@@ -12,8 +12,8 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
 		// Hide unused properties.
 		if (property["name"].AsStringName() == PropertyName.ConveyorAngle
-			|| property["name"].AsStringName() == PropertyName.AutoScaleConveyors
-			|| property["name"].AsStringName() == PropertyName.AutoScaleGuards
+			|| property["name"].AsStringName() == PropertyName.ConveyorAutoScale
+			|| property["name"].AsStringName() == PropertyName.SideGuardsAutoScale
 			|| property["name"].AsStringName() == PropertyName.AutoLegStandsIntervalLegsOffset) {
 			property["usage"] = (int) PropertyUsageFlags.NoEditor;
 		}
@@ -92,12 +92,12 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 	}
 
 	protected override void ScaleConveyor(Node3D conveyor, float conveyorLength) {
-		// AutoScaleConveyors and conveyorLength have no effect on curved conveyors.
+		// ConveyorAutoScale and conveyorLength have no effect on curved conveyors.
 		conveyor.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
 	}
 
 	protected override void ScaleSideGuard(Node3D guard, float guardLength) {
-		// AutoScaleGuards and guardLength have no effect on curved side guards.
+		// SideGuardsAutoScale and guardLength have no effect on curved side guards.
 		guard.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
 	}
 	#endregion Conveyors and Side Guards

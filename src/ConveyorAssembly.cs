@@ -25,17 +25,19 @@ public partial class ConveyorAssembly : Node3D
 	private Transform3D legStandsTransformPrev;
 
 	#region Fields / Exported properties
+	[ExportGroup("Conveyor", "Conveyor")]
 	[Export(PropertyHint.None, "radians_as_degrees")]
 	public float ConveyorAngle { get; set; } = 0f;
 	private float conveyorAnglePrev = 0f;
 
-	[ExportGroup("Auto Scaling", "AutoScale")]
 	[Export]
-	public bool AutoScaleConveyors { get; set; } = true;
-	[Export]
-	public bool AutoScaleGuards { get; set; } = true;
+	public bool ConveyorAutoScale { get; set; } = true;
 
-	[ExportGroup("Auto Leg Stands", "AutoLegStands")]
+	[ExportGroup("Side Guards", "SideGuards")]
+	[Export]
+	public bool SideGuardsAutoScale { get; set; } = true;
+
+	[ExportGroup("Leg Stands", "AutoLegStands")]
 	[Export(PropertyHint.None, "suffix:m")]
 	public float AutoLegStandsFloorOffset = 0f;
 	public float autoLegStandsFloorOffsetPrev;

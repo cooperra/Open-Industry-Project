@@ -36,7 +36,7 @@ public partial class ConveyorAssembly : Node3D
 	 * but currently, we just scale every guard to the length of the whole line and leave its position alone.
 	 *
 	 * @param guardLine The parent of the side guards.
-	 * @param conveyorLineLength The length of the conveyor line to scale to. Ignored if AutoScaleGuards is false.
+	 * @param conveyorLineLength The length of the conveyor line to scale to. Ignored if SideGuardsAutoScale is false.
 	 */
 	private void ScaleSideGuardLine(Node3D guardLine, float conveyorLineLength) {
 		foreach (Node child in guardLine.GetChildren()) {
@@ -53,7 +53,7 @@ public partial class ConveyorAssembly : Node3D
 	}
 
 	protected virtual void ScaleSideGuard(Node3D guard, float guardLength) {
-		if (AutoScaleGuards) {
+		if (SideGuardsAutoScale) {
 			guard.Scale = new Vector3(guardLength, 1f, 1f);
 		}
 	}
