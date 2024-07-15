@@ -20,17 +20,23 @@ public partial class ConveyorAssembly : Node3D
 		foreach (Node child in conveyors.GetChildren()) {
 			Node3D conveyor = child as Node3D;
 			if (IsConveyor(conveyor)) {
-				// Get the conveyor's Transform in the legStands space.
+				// Conveyor's Transform in the legStands space.
 				Transform3D localConveyorTransform = legStands.Transform.AffineInverse() * conveyors.Transform * conveyor.Transform;
-				// Extents in unscaled conveyor space
+
+				// Extent and offset positions in unscaled conveyor space
 				Vector3 conveyorExtentFront = new Vector3(-Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f), 0f, 0f);
 				Vector3 conveyorExtentRear = new Vector3(Mathf.Abs(localConveyorTransform.Basis.Scale.X * 0.5f), 0f, 0f);
-				Vector3 grabOffsetFront = new Vector3(AutoLegStandsMarginEnds, -AutoLegStandsModelGrabsOffset, 0f);
-				Vector3 grabOffsetRear = new Vector3(-AutoLegStandsMarginEnds, -AutoLegStandsModelGrabsOffset, 0f);
 
-				// Grab points in legStands space
-				Vector3 legGrabPointFront = localConveyorTransform.Orthonormalized() * (conveyorExtentFront + grabOffsetFront);
-				Vector3 legGrabPointRear = localConveyorTransform.Orthonormalized() * (conveyorExtentRear + grabOffsetRear);
+				Vector3 marginOffsetFront = new Vector3(AutoLegStandsMarginEnds, 0f, 0f);
+				Vector3 marginOffsetRear = new Vector3(-AutoLegStandsMarginEnds, 0f, 0f);
+
+				// The tip of the leg stand has a rotating grab model that isn't counted towards its height.
+				// Because the grab will rotate towards the conveyor, we account for its reach here.
+				Vector3 grabOffset = new Vector3(0f, -AutoLegStandsModelGrabsOffset, 0f);
+
+				// Final grab points in legStands space
+				Vector3 legGrabPointFront = localConveyorTransform.Orthonormalized() * (conveyorExtentFront + marginOffsetFront + grabOffset);
+				Vector3 legGrabPointRear = localConveyorTransform.Orthonormalized() * (conveyorExtentRear + marginOffsetRear + grabOffset);
 
 				// Update min and max.
 				min = Mathf.Min(min, Mathf.Min(legGrabPointRear.X, legGrabPointFront.X));
