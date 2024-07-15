@@ -36,6 +36,12 @@ public partial class ConveyorAssembly : Node3D
 	[ExportGroup("Side Guards", "SideGuards")]
 	[Export]
 	public bool SideGuardsAutoScale { get; set; } = true;
+	[Export]
+	public bool SideGuardsLeftSide { get; set; } = true;
+	[Export]
+	public bool SideGuardsRightSide { get; set; } = true;
+	[Export]
+	public Godot.Collections.Array<SideGuardGap> SideGuardsGaps = new();
 
 	[ExportGroup("Leg Stands", "AutoLegStands")]
 	[Export(PropertyHint.None, "suffix:m")]

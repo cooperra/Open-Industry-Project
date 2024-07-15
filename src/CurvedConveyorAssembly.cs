@@ -14,6 +14,9 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		if (property["name"].AsStringName() == PropertyName.ConveyorAngle
 			|| property["name"].AsStringName() == PropertyName.ConveyorAutoScale
 			|| property["name"].AsStringName() == PropertyName.SideGuardsAutoScale
+			|| property["name"].AsStringName() == PropertyName.SideGuardsLeftSide
+			|| property["name"].AsStringName() == PropertyName.SideGuardsRightSide
+			|| property["name"].AsStringName() == PropertyName.SideGuardsGaps
 			|| property["name"].AsStringName() == PropertyName.AutoLegStandsIntervalLegsOffset) {
 			property["usage"] = (int) PropertyUsageFlags.NoEditor;
 		}
