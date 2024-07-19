@@ -51,9 +51,7 @@ public partial class ConveyorAssembly : Node3D
 				this.ConveyorAngle = (scale * conveyors.Basis).GetEuler().Z;
 				NotifyPropertyListChanged();
 			}
-		}
-		conveyorAnglePrev = ConveyorAngle;
-		conveyorsTransformPrev = conveyors.Transform;
+		};
 	}
 	#endregion Conveyors / Update "Conveyors" node
 

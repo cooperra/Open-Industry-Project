@@ -5,12 +5,18 @@ using System.Collections.Generic;
 public partial class ConveyorAssembly : Node3D
 {
 	#region Constants
+	#region Constants / Leg Stands
 	private const string AUTO_LEG_STAND_NAME_PREFIX = "AutoLegsStand";
 	private const string AUTO_LEG_STAND_NAME_FRONT = "AutoLegsStandFront";
 	private const string AUTO_LEG_STAND_NAME_REAR = "AutoLegsStandRear";
 	private const int LEG_INDEX_FRONT = -1;
 	private const int LEG_INDEX_REAR = -2;
 	private const int LEG_INDEX_NON_AUTO = -3;
+	#endregion Constants / Leg Stands
+
+	#region Constants / Side Guards
+	private const string AUTO_SIDE_GUARD_NAME_PREFIX = "AutoSideGuard";
+	#endregion Constants / Side Guards
 	#endregion Constants
 
 	#region Fields
@@ -35,13 +41,31 @@ public partial class ConveyorAssembly : Node3D
 
 	[ExportGroup("Side Guards", "SideGuards")]
 	[Export]
-	public bool SideGuardsAutoScale { get; set; } = true;
+	public bool SideGuardsLeftSide
+	{
+		get => _sideGuardsLeftSide;
+		set
+		{
+			_sideGuardsLeftSide = value;
+			UpdateSide(false);
+		}
+	}
+	private bool _sideGuardsLeftSide = true;
 	[Export]
-	public bool SideGuardsLeftSide { get; set; } = true;
-	[Export]
-	public bool SideGuardsRightSide { get; set; } = true;
+	public bool SideGuardsRightSide
+	{
+		get => _sideGuardsRightSide;
+		set
+		{
+			_sideGuardsRightSide = value;
+			UpdateSide(true);
+		}
+	}
+	private bool _sideGuardsRightSide = true;
 	[Export]
 	public Godot.Collections.Array<SideGuardGap> SideGuardsGaps = new();
+	[Export]
+	public PackedScene SideGuardsModelScene = GD.Load<PackedScene>("res://parts/SideGuard.tscn");
 
 	[ExportGroup("Leg Stands", "AutoLegStands")]
 	[Export(PropertyHint.None, "suffix:m")]
@@ -100,8 +124,6 @@ public partial class ConveyorAssembly : Node3D
 	public override void _Ready()
 	{
 		conveyors = GetNode<Node3D>("Conveyors");
-		rightSide = GetNodeOrNull<Node3D>("RightSide");
-		leftSide = GetNodeOrNull<Node3D>("LeftSide");
 		legStands = GetNodeOrNull<Node3D>("LegStands");
 
 		transformPrev = this.Transform;
@@ -113,6 +135,8 @@ public partial class ConveyorAssembly : Node3D
 			conveyorAnglePrev = conveyorsStartingAngle;
 			conveyorsTransformPrev = conveyors.Transform;
 			SyncConveyorsAngle();
+			conveyorAnglePrev = ConveyorAngle;
+			conveyorsTransformPrev = conveyors.Transform;
 		}
 
 		// Apply the AutoLegStandsFloorOffset and AutoLegStandsIntervalLegsOffset properties if needed.
@@ -123,6 +147,8 @@ public partial class ConveyorAssembly : Node3D
 			legStandsTransformPrev = legStands.Transform;
 			SyncLegStandsOffsets();
 		}
+
+		UpdateSides();
 
 		autoLegStandsIntervalLegsIntervalPrev = AutoLegStandsIntervalLegsInterval;
 		autoLegStandsModelScenePrev = AutoLegStandsModelScene;
@@ -143,10 +169,14 @@ public partial class ConveyorAssembly : Node3D
 		ApplyAssemblyScaleConstraints();
 		PreventAllChildScaling();
 		UpdateConveyors();
-		UpdateSides();
+		if (conveyorsTransformPrev != conveyors.Transform) {
+			UpdateSides();
+		}
 		UpdateLegStandCoverage();
 		UpdateLegStands();
 		transformPrev = this.Transform;
+		conveyorAnglePrev = ConveyorAngle;
+		conveyorsTransformPrev = conveyors.Transform;
 		autoLegStandsIntervalLegsEnabledPrev = AutoLegStandsIntervalLegsEnabled;
 		autoLegStandsEndLegFrontPrev = AutoLegStandsEndLegFront;
 		autoLegStandsEndLegRearPrev = AutoLegStandsEndLegRear;

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 public partial class ConveyorAssembly : Node3D
@@ -6,18 +9,28 @@ public partial class ConveyorAssembly : Node3D
 	#region SideGuards / Update "LeftSide" and "RightSide" nodes
 	private void UpdateSides()
 	{
-		UpdateSide(rightSide, true);
-		UpdateSide(leftSide, false);
+		UpdateSide(true);
+		UpdateSide(false);
 	}
 
-	private void UpdateSide(Node3D side, bool isRight) {
-		if (side == null || conveyors == null) {
+
+	private void UpdateSide(bool isRight) {
+		Node3D side;
+		if (isRight) {
+			rightSide = IsInstanceValid(rightSide) ? rightSide : GetNodeOrNull<Node3D>("RightSide");
+			side = rightSide;
+		} else {
+			leftSide = IsInstanceValid(leftSide) ? leftSide : GetNodeOrNull<Node3D>("LeftSide");
+			side = leftSide;
+		}
+		if (side == null) {
 			return;
 		}
-		LockSidePosition(side, isRight);
-		var conveyorLineLength = GetConveyorLineLength();
-		ScaleSideGuardLine(side, conveyorLineLength);
-		// This would be a great place to implement proportional positioning of other Node3Ds attached to sides when the assembly scales.
+		conveyors = IsInstanceValid(conveyors) ? conveyors : GetNodeOrNull<Node3D>("Conveyors");
+		if (conveyors != null) {
+			LockSidePosition(side, isRight);
+		}
+		UpdateAutoSideGuards(side, isRight);
 	}
 
 	private void LockSidePosition(Node3D side, bool isRight) {
@@ -53,10 +66,251 @@ public partial class ConveyorAssembly : Node3D
 	}
 
 	protected virtual void ScaleSideGuard(Node3D guard, float guardLength) {
-		if (SideGuardsAutoScale) {
-			guard.Scale = new Vector3(guardLength, 1f, 1f);
-		}
+		guard.Scale = new Vector3(guardLength, 1f, 1f);
 	}
 	#endregion SideGuards / ScaleSideGuardLine
+
+	#region SideGuards / Auto SideGuards
+	private void UpdateAutoSideGuards(Node3D side, bool isRight) {
+		var targetSideGuardExtents = GetTargetAutoSideGuardExtents(isRight);
+		ApplyAutoSideGuardExtents(side, targetSideGuardExtents, isRight);
+	}
+
+	/**
+	 * Given existing conveyors and desired gaps, determine the desired extents of side guards.
+	 *
+	 * @param isRight Whether to calculate for the right or left side.
+	 */
+	private List<(float, float)> GetTargetAutoSideGuardExtents(bool isRight) {
+		// Assume that the conveyor extents are in the same space as the side guards and gaps.
+		if (isRight && !SideGuardsRightSide || !isRight && !SideGuardsLeftSide) {
+			// No side guards.
+			return new();
+		}
+		List<(float, float)> extentPairs = GetAllConveyorExtents();
+		ApplySideGuardGapsToExtents(ref extentPairs, isRight);
+		return extentPairs;
+	}
+
+	/**
+	 * Cut gaps into the conveyor extents list.
+	 *
+	 * Shrink or remove conveyor extents to make room for side guard gaps.
+	 *
+	 * @param extentPairs The list of conveyor extents to cut gaps into.
+	 */
+	private void ApplySideGuardGapsToExtents(ref List<(float, float)> extentPairs, bool isRight) {
+		// Sort and merge the gaps for the current side. Zero-width gaps allowed.
+		List<(float, float)> gaps = SideGuardsGaps.ToList()
+			//.Select<Resource, SideGuardGap>(gap => gap as SideGuardGap)
+			.Where((SideGuardGap gap) => gap != null && (gap.Side == SideGuardGap.SideGuardGapSide.Both
+			|| isRight && gap.Side == SideGuardGap.SideGuardGapSide.Right
+			|| !isRight && gap.Side == SideGuardGap.SideGuardGapSide.Left))
+			.Select(gap => (gap.Position - Mathf.Abs(gap.Width) / 2f, gap.Position + Mathf.Abs(gap.Width) / 2f))
+			.OrderBy(gap => gap.Item1)
+			.Aggregate(new List<(float, float)>(), (acc, gap) => {
+				if (acc.Count == 0) {
+					acc.Add(gap);
+					return acc;
+				}
+				// Merge overlapping gaps.
+				// Gaps are already sorted by leading edge.
+				var last = acc.Last();
+				if (last.Item2 < gap.Item1) {
+					// No overlap.
+					acc.Add(gap);
+				} else if (last.Item2 < gap.Item2) {
+					// Partial overlap.
+					acc[^1] = (last.Item1, gap.Item2);
+				}
+				// Otherwise, full overlap; ignore.
+				return acc;
+			}).ToList();
+
+		// Cut gaps into the given extents.
+		// Don't assume any sorting on the extents.
+		for (int i = 0; i < extentPairs.Count; i++) {
+			(float extentFront, float extentRear) = extentPairs[i];
+			if (extentRear < extentFront) {
+				// Sort extents.
+				(extentFront, extentRear) = (extentRear, extentFront);
+				extentPairs[i] = (extentFront, extentRear);
+			}
+			// Drop empty extents.
+			if (extentFront == extentRear) {
+				extentPairs.RemoveAt(i);
+				i--;
+				continue;
+			}
+			foreach ((float gapFront, float gapRear) in gaps) {
+				if (extentRear <= gapFront) {
+					// Extent is entirely before the gap.
+					continue;
+				}
+				if (extentFront < gapFront && gapRear < extentRear) {
+					// Gap is fully inside the extent; split it.
+					extentPairs.Insert(i + 1, (gapRear, extentRear));
+					extentPairs[i] = (extentFront, gapFront);
+					break;
+				}
+				if (gapFront < extentFront && extentRear < gapRear) {
+					// Extent is fully inside the gap; remove it.
+					extentPairs.RemoveAt(i);
+					i--;
+					break;
+				}
+				if (extentFront < gapFront && gapFront < extentRear) {
+					// Gap clips the end of the extent.
+					extentPairs[i] = (extentFront, gapFront);
+					// Gaps are sorted by leading edge, so we can break because no more could overlap.
+					break;
+				}
+				if (extentFront < gapRear && gapRear < extentRear) {
+					// Gap clips the start of the extent.
+					extentPairs[i] = (gapRear, extentRear);
+					// More gaps might overlap.
+					(extentFront, extentRear) = extentPairs[i];
+				}
+			}
+		}
+	}
+
+	/**
+	 * Create, update, or remove auto side guards to match the target extents.
+	 *
+	 * The `side` node is assumed to have the same global rotation as the `conveyors` node.
+	 * The position should be the same as the `conveyors` node, but with a possible Z offset.
+	 * All generated side guards will be placed and aligned on `side`'s X axis.
+	 *
+	 * @param side The parent node of the side guards.
+	 * @param targetExtents A list of x position pairs for each desired side guard describing the positions of its ends.
+	 * @param isRight Which direction side guards should be rotated for.
+	 */
+	private void ApplyAutoSideGuardExtents(Node3D side, List<(float, float)> targetExtents, bool isRight)
+	{
+		Node[] existingGuards = IndexOrRemoveExistingSideGuards(side, targetExtents.Count);
+		// Iterate through the guards and extents together.
+		for (int i = 0; i < targetExtents.Count; i++)
+		{
+			(float extentFront, float extentRear) = targetExtents[i];
+			Node node = existingGuards[i];
+			if (node != null && (!IsSideGuard(node) || node.SceneFilePath != SideGuardsModelScene.ResourcePath))
+			{
+				// We don't like this node.
+				// It is either a non-SideGuard with a SideGuard name or it's a SideGuard of the wrong scene.
+				// Delete it so it can be replaced.
+				side.RemoveChild(node);
+				node.QueueFree();
+				existingGuards[i] = null;
+			}
+			Node3D guard = existingGuards[i] as Node3D;
+			if (guard == null)
+			{
+				// Create and add new guard.
+				guard = InstanceAutoSideGuard(i);
+				existingGuards[i] = guard;
+				if (i == 0)
+				{
+					// Add to the front.
+					side.AddChild(guard);
+					side.MoveChild(guard, 0);
+				}
+				else
+				{
+					// Add as sibling to the previous guard.
+					existingGuards[i - 1].AddSibling(guard);
+				}
+			}
+			// Position and scale the guard.
+			guard.Position = new Vector3((extentFront + extentRear) / 2f, 0, 0);
+			guard.RotationDegrees = new Vector3(0, isRight ? 180 : 0, 0);
+			ScaleSideGuard(guard, extentRear - extentFront);
+		}
+
+		// I don't think it's really going to matter if guards jump around when gaps are added or removed.
+		// They're all the same. No one's going to want to edit them to be unique.
+	}
+
+	/**
+	 * Creates an array of the first `count` child nodes named with the auto side guard prefix.
+	 * The index in the array is the index of the guard. Removes and deletes any excess guards.
+	 */
+	private Node[] IndexOrRemoveExistingSideGuards(Node3D side, int count)
+	{
+		Node[] existingGuards = new Node[count];
+		foreach ((int index, Node guard) in side.GetChildren()
+			.Select(guard => (GetAutoSideGuardIndex(guard.Name), guard))
+			.Where(pair => pair.Item1.HasValue)
+			.Select(pair => (pair.Item1.Value, pair.guard)))
+		{
+			if (index < 0 || index >= count)
+			{
+				// Remove excess guards.
+				side.RemoveChild(guard);
+				guard.QueueFree();
+			}
+			else
+			{
+				existingGuards[index] = guard;
+			}
+		}
+
+		return existingGuards;
+	}
+
+	private int? GetAutoSideGuardIndex(StringName name) {
+		if (name.ToString().StartsWith(AUTO_SIDE_GUARD_NAME_PREFIX) &&
+			int.TryParse(name.ToString().AsSpan(AUTO_SIDE_GUARD_NAME_PREFIX.Length), out int sideGuardIndex)) {
+			// Names start at 1, but indices start at 0.
+			return sideGuardIndex - 1;
+		}
+		return null;
+	}
+
+	private Node3D InstanceAutoSideGuard(int index) {
+		Node3D guard = SideGuardsModelScene.InstantiateOrNull<Node3D>();
+		if (guard == null) {
+			// If there's something wrong with the scene, just make a plain Node3D and hope for the best.
+			guard = new Node3D();
+		}
+		guard.Name = new StringName($"{AUTO_SIDE_GUARD_NAME_PREFIX}{index + 1}");
+		guard.Owner = this;
+		return guard;
+	}
+	// TODO move to ConveyorAssembly.Conveyors.cs
+	/**
+	 * Get the extents of all conveyors in the assembly.
+	 *
+	 * The extents are the (front, rear) X positions of each conveyor.
+	 * They're used to determine where to place side guards.
+	 *
+	 * @return A list of (front, rear) extents of each conveyor.
+	 */
+	private List<(float, float)> GetAllConveyorExtents() {
+		// Assume straight assembly.
+		// Assume all conveyors are in the same reference frame, straight, aligned end-to-end, and parallel to the x-axis of that reference frame.
+		// We will use the `conveyors` node's children, but this would work for any list that meets the above assumptions.
+
+		// Additional thought: it would be neat to return extent positions or something instead, that way we could take any arbitrary arrangement of conveyors. As long as the gaps could still cut into it, it could work.
+		// This approach would also bring us closer to automatic leg stands per conveyor instead of per conveyor line.
+
+		List<(float, float)> results = new();
+		if (conveyors == null) {
+			return results;
+		}
+		foreach (Node3D node3D in conveyors.GetChildren()) {
+			if (IsConveyor(node3D)) {
+				// Assume conveyor length equal to X scale.
+				// (Don't account for the end caps; they reach beyond the extents.)
+				// This assumption is convenient because SideGuards' end caps overreach the same amount.
+				float length = node3D.Scale.X;
+				float extentFront = node3D.Position.X - length / 2f;
+				float extentRear = node3D.Position.X + length / 2f;
+				results.Add((extentFront, extentRear));
+			}
+		}
+		return results;
+	}
+	#endregion SideGuards / Auto SideGuards
 	#endregion SideGuards
 }

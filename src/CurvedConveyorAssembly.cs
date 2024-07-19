@@ -13,7 +13,6 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		// Hide unused properties.
 		if (property["name"].AsStringName() == PropertyName.ConveyorAngle
 			|| property["name"].AsStringName() == PropertyName.ConveyorAutoScale
-			|| property["name"].AsStringName() == PropertyName.SideGuardsAutoScale
 			|| property["name"].AsStringName() == PropertyName.SideGuardsLeftSide
 			|| property["name"].AsStringName() == PropertyName.SideGuardsRightSide
 			|| property["name"].AsStringName() == PropertyName.SideGuardsGaps
