@@ -16,6 +16,7 @@ public partial class ConveyorAssembly : Node3D
 		SyncConveyorsAngle();
 		var conveyorLineLength = GetConveyorLineLength();
 		ScaleConveyorLine(conveyors, conveyorLineLength);
+		// Needed for curved conveyors.
 		ScaleSideGuardLine(conveyors, conveyorLineLength);
 	}
 
