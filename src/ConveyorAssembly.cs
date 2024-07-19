@@ -63,9 +63,47 @@ public partial class ConveyorAssembly : Node3D
 	}
 	private bool _sideGuardsRightSide = true;
 	[Export]
-	public Godot.Collections.Array<SideGuardGap> SideGuardsGaps = new();
+	public Godot.Collections.Array<SideGuardGap> SideGuardsGaps
+	{
+		get => _sideGuardsGaps;
+		set
+		{
+			// Ensure that side guards update whenever this array or its contents change.
+			foreach (SideGuardGap gap in _sideGuardsGaps)
+			{
+				if (gap == null)
+				{
+					continue;
+				}
+				gap.Changed -= UpdateSides;
+			}
+			_sideGuardsGaps = value;
+			foreach (SideGuardGap gap in _sideGuardsGaps)
+			{
+				if (gap == null)
+				{
+					continue;
+				}
+				gap.Changed += UpdateSides;
+			}
+			UpdateSides();
+		}
+	}
+	private Godot.Collections.Array<SideGuardGap> _sideGuardsGaps = new();
 	[Export]
-	public PackedScene SideGuardsModelScene = GD.Load<PackedScene>("res://parts/SideGuard.tscn");
+	public PackedScene SideGuardsModelScene
+	{
+		get => _sideGuardsModelScene;
+		set
+		{
+			bool hasChanged = _sideGuardsModelScene != value;
+			_sideGuardsModelScene = value;
+			if (hasChanged) {
+				UpdateSides();
+			}
+		}
+	}
+	private PackedScene _sideGuardsModelScene = GD.Load<PackedScene>("res://parts/SideGuard.tscn");
 
 	[ExportGroup("Leg Stands", "AutoLegStands")]
 	[Export(PropertyHint.None, "suffix:m")]
@@ -83,6 +121,7 @@ public partial class ConveyorAssembly : Node3D
 
 	[Export(PropertyHint.Range, "-5,5,or_less,or_greater,suffix:m")]
 	public float AutoLegStandsIntervalLegsOffset { get; set; } = 0f;
+
 	private float autoLegStandsIntervalLegsOffsetPrev;
 
 	[ExportSubgroup("End Legs", "AutoLegStandsEndLeg")]
