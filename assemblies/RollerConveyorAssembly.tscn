@@ -1,11 +1,12 @@
-[gd_scene load_steps=29 format=4 uid="uid://i8xb8locnhi5"]
+[gd_scene load_steps=24 format=4 uid="uid://i8xb8locnhi5"]
 
 [ext_resource type="Script" path="res://src/ConveyorAssembly.cs" id="1_nkn8g"]
 [ext_resource type="PackedScene" uid="uid://rv5ef61beh35" path="res://parts/ConveyorLegRC.tscn" id="2_a0feq"]
 [ext_resource type="PackedScene" uid="uid://dg47c07xr4ksu" path="res://parts/RollerConveyor.tscn" id="2_pqgj2"]
+[ext_resource type="PackedScene" uid="uid://dvjrx5crpqs5f" path="res://parts/SideGuard.tscn" id="3_l6sjy"]
 [ext_resource type="Shader" uid="uid://d0c82kmt01y6x" path="res://assets/3DModels/Shaders/MetalShaderRoller.tres" id="4_81x6s"]
 [ext_resource type="PackedScene" uid="uid://d4bf4if1fpy0t" path="res://src/RollerConveyor/Roller.tscn" id="5_f1jg7"]
-[ext_resource type="Shader" uid="uid://wtu5yyfpdcgl" path="res://assets/3DModels/Shaders/MetalShaderSideGuard.tres" id="5_nkjhq"]
+[ext_resource type="Script" path="res://src/SideGuards/SideGuard.cs" id="7_d5eiv"]
 [ext_resource type="Material" uid="uid://bhsy5iqi7rvp" path="res://assets/3DModels/Materials/LegsStandMaterial.tres" id="8_64v37"]
 [ext_resource type="Shader" uid="uid://b6uso6bqiurpv" path="res://assets/3DModels/Shaders/MetalShaderLegsBar.tres" id="11_0gvht"]
 
@@ -48,35 +49,6 @@ _surfaces = [{
 }]
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_rm54m")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_tk80a"]
-render_priority = 0
-shader = ExtResource("5_nkjhq")
-shader_parameter/Scale = 4.0
-shader_parameter/Metallic = 0.94
-shader_parameter/Roughness = 0.5
-shader_parameter/Specular = 0.5
-
-[sub_resource type="ArrayMesh" id="ArrayMesh_gn6s2"]
-_surfaces = [{
-"aabb": AABB(-0.5, -0.00427932, -1.12983, 1, 0.604281, 0.169856),
-"format": 34896613377,
-"index_count": 204,
-"index_data": PackedByteArray("AAACAAEAAAADAAIADQACAAwADQABAAIAAwAJAAoAAwAAAAkACAAKAAkACAALAAoACAAHAAsACAAGAAcADgAMAA8ADgANAAwABAAPAAUABAAOAA8ABAARABAABAAFABEAEgAUABUAEgATABQAHwAUABMAHwAeABQAFQAbABIAFQAcABsAGgAcAB0AGgAbABwAGgAZABgAGgAdABkAIAAeAB8AIAAhAB4AFgAhACAAFgAXACEAFgAjABcAFgAiACMAAQASAAAAAQATABIAAwAUAAIAAwAVABQAAgAeAAwAAgAUAB4ACgAVAAMACgAcABUAAAAbAAkAAAASABsACQAaAAgACQAbABoACwAcAAoACwAdABwABwAdAAsABwAZAB0ACAAYAAYACAAaABgADAAhAA8ADAAeACEADQATAAEADQAfABMADgAfAA0ADgAgAB8ADwAXAAUADwAhABcAEAAWAAQAEAAiABYABAAgAA4ABAAWACAABQAjABEABQAXACMABgAZAAcABgAYABkAEQAiABAAEQAjACIA"),
-"name": "BeltTopDown",
-"primitive": 3,
-"uv_scale": Vector4(0, 0, 0, 0),
-"vertex_count": 36,
-"vertex_data": PackedByteArray("AADMEI2IAAAAAPkeREsAAP//+R5ESwAA///MEI2IAAAAAIX3ukoAAP//hfe6SgAAAAASAEDhAAD//xIAQOEAAAAAKxC/4QAAAADNEIvfAAD//80Qi98AAP//KxC/4QAA//+KVhxLAAAAAIpWHEsAAAAAHfTESgAA//8d9MRKAAAAAIX3AAAAAP//hfcAAAAAAABFGVuTAAAAAPoiZmkAAP//+iJmaQAA//9FGVuTAAAAAP//yGgAAP///v/IaAAAAAAAAGX/AAD//wAAZf8AAAAAlhP+/wAAAABGGT7sAAD//0YZPuwAAP//lhP//wAA//+MVkFpAAAAAIxWQWkAAAAAIfToaAAA//8g9OhoAAAAAP//AAAAAP///v8AAAAA")
-}]
-blend_shape_mode = 0
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_7xtuw"]
-render_priority = 0
-shader = ExtResource("5_nkjhq")
-shader_parameter/Scale = 4.0
-shader_parameter/Metallic = 0.94
-shader_parameter/Roughness = 0.5
-shader_parameter/Specular = 0.5
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_lqk25"]
 _surfaces = [{
@@ -294,8 +266,20 @@ transform = Transform3D(-0.25, 6.47981e-14, 1.50996e-07, -6.60024e-15, 1, -6.039
 [node name="LeftSide" type="Node3D" parent="."]
 transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 
+[node name="AutoSideGuard1" type="Node3D" parent="LeftSide" instance=ExtResource("3_l6sjy")]
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("7_d5eiv")
+LeftEnd = true
+RightEnd = true
+
 [node name="RightSide" type="Node3D" parent="."]
 transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="AutoSideGuard1" type="Node3D" parent="RightSide" instance=ExtResource("3_l6sjy")]
+transform = Transform3D(-4, 0, -8.74228e-08, 0, 1, 0, 3.49691e-07, 0, -1, 0, 0, 0)
+script = ExtResource("7_d5eiv")
+LeftEnd = true
+RightEnd = true
 
 [node name="LegStands" type="Node3D" parent="."]
 transform = Transform3D(0.25, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)

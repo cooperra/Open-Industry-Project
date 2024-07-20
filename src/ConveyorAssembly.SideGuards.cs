@@ -220,6 +220,7 @@ public partial class ConveyorAssembly : Node3D
 					// Add as sibling to the previous guard.
 					existingGuards[i - 1].AddSibling(guard);
 				}
+				SetGuardOwner(guard);
 			}
 			// Position and scale the guard.
 			guard.Position = new Vector3((extentFront + extentRear) / 2f, 0, 0);
@@ -274,8 +275,14 @@ public partial class ConveyorAssembly : Node3D
 			guard = new Node3D();
 		}
 		guard.Name = new StringName($"{AUTO_SIDE_GUARD_NAME_PREFIX}{index + 1}");
-		guard.Owner = null;
 		return guard;
+	}
+
+	private void SetGuardOwner(Node3D guard) {
+		// Use conveyors to determine the owner.
+		// We want the guards to have the same owner as everything else in the assembly regardless of whether this is an instance or part of the currently-edited scene.
+		// This is a good way to do it because we know the conveyors node exists if we're instancing guards.
+		guard.Owner = conveyors?.Owner;
 	}
 	// TODO move to ConveyorAssembly.Conveyors.cs
 	/**
