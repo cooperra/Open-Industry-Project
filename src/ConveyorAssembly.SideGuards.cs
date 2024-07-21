@@ -199,6 +199,7 @@ public partial class ConveyorAssembly : Node3D
 				// We don't like this node.
 				// It is either a non-SideGuard with a SideGuard name or it's a SideGuard of the wrong scene.
 				// Delete it so it can be replaced.
+				TallyDeletedSideGuard(isRight, node);
 				side.RemoveChild(node);
 				node.QueueFree();
 				existingGuards[i] = null;
@@ -220,7 +221,8 @@ public partial class ConveyorAssembly : Node3D
 					// Add as sibling to the previous guard.
 					existingGuards[i - 1].AddSibling(guard);
 				}
-				SetGuardOwner(guard);
+				SetGuardOwner(guard, isRight);
+				TallyAddedSideGuard(isRight, guard);
 			}
 			// Position and scale the guard.
 			guard.Position = new Vector3((extentFront + extentRear) / 2f, 0, 0);
@@ -278,11 +280,39 @@ public partial class ConveyorAssembly : Node3D
 		return guard;
 	}
 
-	private void SetGuardOwner(Node3D guard) {
-		// Use conveyors to determine the owner.
+	private void SetGuardOwner(Node3D guard, bool isRight) {
+		// Use conveyors to determine the assembly's owner (either the assembly itself or the scene that contains it).
 		// We want the guards to have the same owner as everything else in the assembly regardless of whether this is an instance or part of the currently-edited scene.
 		// This is a good way to do it because we know the conveyors node exists if we're instancing guards.
-		guard.Owner = conveyors?.Owner;
+		Node assemblyOwner = conveyors?.Owner;
+		Node editedScene = IsInsideTree() ? GetTree().GetEditedSceneRoot() : null;
+
+		// The following logic is just a hack to workaround problems with the editor's duplication feature.
+		// Look at the fields' comments for more background.
+		// Ideally the assembly would always own the guards.
+		if (isRight && _missingAssemblyOwnedGuardsRight > 0 || !isRight && _missingAssemblyOwnedGuardsLeft > 0) {
+			guard.Owner = assemblyOwner;
+			GD.Print("Set guard owner to assembly owner", assemblyOwner == null ? " (null)" : "");
+		} else {
+			guard.Owner = editedScene;
+			GD.Print("Set guard owner to edited scene", editedScene == null ? " (null)" : "");
+		}
+	}
+
+	private void TallyAddedSideGuard(bool isRight, Node guard) {
+		if (isRight) {
+			_missingAssemblyOwnedGuardsRight -= guard.Owner == conveyors.Owner ? 1 : 0;
+		} else {
+			_missingAssemblyOwnedGuardsLeft -= guard.Owner == conveyors.Owner ? 1 : 0;
+		}
+	}
+
+	private void TallyDeletedSideGuard(bool isRight, Node guard) {
+		if (isRight) {
+			_missingAssemblyOwnedGuardsRight += (conveyors == null || guard.Owner == conveyors.Owner) ? 1 : 0;
+		} else {
+			_missingAssemblyOwnedGuardsLeft += (conveyors == null || guard.Owner == conveyors.Owner) ? 1 : 0;
+		}
 	}
 	// TODO move to ConveyorAssembly.Conveyors.cs
 	/**

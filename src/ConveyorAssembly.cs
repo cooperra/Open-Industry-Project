@@ -148,6 +148,27 @@ public partial class ConveyorAssembly : Node3D
 	private PackedScene autoLegStandsModelScenePrev;
 	#endregion Fields / Exported properties
 
+	#region Fields / Side guards ownership
+	// These are used to track ownership of our auto-generated side guards.
+	// The only reason we need to do this is to appease the editor's duplicaton feature.
+	// On duplicate, the editor will expect all our assembly-owned children to load with our PackedScene.
+	// But if we generated them later, they won't be there. And we won't have time to recreate them.
+	// It will attempt to copy properties to them and fail.
+	//
+	// The workaround: We set the owner of additional guards to the currently edited scene.
+	// We also track how many original guards from the PackedScene we've deleted
+	// so that we can recreate them with their original owner (the assembly's scene).
+	// That prevents problems with our PackedScene nodes colliding with current-scene-owned nodes.
+	//
+	// If Godot ever improves duplication behavior, we should remove this workaround.
+	// We don't recreate ownership well enough for more than one layer of instancing.
+	//
+	// Ideally, all guards would be owned by the assembly's scene,
+	// Godot wouldn't attempt to duplicate them, and we would regenerate them ourselves.
+	private int _missingAssemblyOwnedGuardsLeft = 0;
+	private int _missingAssemblyOwnedGuardsRight = 0;
+	#endregion Fields / Side guards ownership
+
 	#region Fields / Leg stand coverage
 	private float legStandCoverageMin;
 	private float legStandCoverageMax;
