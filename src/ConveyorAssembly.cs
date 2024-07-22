@@ -71,7 +71,6 @@ public partial class ConveyorAssembly : Node3D
 			// Workaround for faulty duplicate behavior in the editor.
 			// See issue #74918.
 			if (_sideGuardsGaps.Count == 0) {
-				GD.Print("Setting side guards gaps for the first time.");
 				// Assume that we're initializing for the first time.
 				// Any gaps we see in the new array possibly came from an original that this instance is a duplicate of.
 				// There's no way to know for sure.
