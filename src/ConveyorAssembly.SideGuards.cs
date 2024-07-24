@@ -33,7 +33,7 @@ public partial class ConveyorAssembly : Node3D
 		UpdateAutoSideGuards(side, isRight);
 	}
 
-	private void LockSidePosition(Node3D side, bool isRight) {
+	protected virtual void LockSidePosition(Node3D side, bool isRight) {
 		// Sides always snap onto the conveyor line
 		side.Transform = conveyors.Transform;
 		var offsetZ = (isRight? 1 : -1) * side.Basis.Z * (this.Scale.Z - 1f);

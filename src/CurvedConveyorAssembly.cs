@@ -98,6 +98,12 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		conveyors.Position = new Vector3(0, conveyors.Position.Y, 0);
 	}
 
+	protected override void LockSidePosition(Node3D side, bool isRight) {
+		// Sides always snap onto the conveyor line
+		// Just snap both sides to the center without any offset.
+		side.Transform = conveyors.Transform;
+	}
+
 	protected override void ScaleConveyor(Node3D conveyor, float conveyorLength) {
 		// ConveyorAutoScale and conveyorLength have no effect on curved conveyors.
 		conveyor.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
