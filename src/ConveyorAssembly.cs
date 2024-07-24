@@ -62,6 +62,18 @@ public partial class ConveyorAssembly : Node3D
 		}
 	}
 	private bool _sideGuardsRightSide = true;
+	// This only exists to give us a single checkbox for CurvedConveyorAssembly, which doesn't have separate left and right side guard models.
+	// We hide it in the editor by default.
+	[Export]
+	public bool SideGuardsBothSides
+	{
+		get => SideGuardsLeftSide && SideGuardsRightSide;
+		set
+		{
+			SideGuardsLeftSide = value;
+			SideGuardsRightSide = value;
+		}
+	}
 	[Export]
 	public Godot.Collections.Array<SideGuardGap> SideGuardsGaps
 	{
@@ -176,6 +188,30 @@ public partial class ConveyorAssembly : Node3D
 
 	// This variable is used to store the names of the pre-existing leg stands that can't be owned by the edited scene.
 	private Dictionary <StringName, Node> foreignLegStandsOwners = new();
+
+	#region Fields / Property method overrides
+	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
+		// Hide this property as it's only useful for CurvedConveyorAssembly; it clutters the UI otherwise.
+		if (property["name"].AsStringName() == PropertyName.SideGuardsBothSides) {
+			// We don't even want it stored. SideGuardsLeftSide and SideGuardsRightSide are the source of truth.
+			property["usage"] = (int) PropertyUsageFlags.None;
+		}
+	}
+
+	public override bool _PropertyCanRevert(StringName property) {
+		if (property == PropertyName.SideGuardsBothSides) {
+			return true;
+		}
+		return base._PropertyCanRevert(property);
+	}
+
+	public override Variant _PropertyGetRevert(StringName property) {
+		if (property == PropertyName.SideGuardsBothSides) {
+			return true;
+		}
+		return base._PropertyGetRevert(property);
+	}
+	#endregion Fields / Property method overrides
 	#endregion Fields
 
 	#region _Ready and _PhysicsProcess

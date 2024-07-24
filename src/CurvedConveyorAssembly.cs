@@ -10,6 +10,11 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 	}
 
 	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
+		// Show SideGuardsBothSides.
+		if (property["name"].AsStringName() == PropertyName.SideGuardsBothSides) {
+			// We don't want it stored. SideGuardsLeftSide and SideGuardsRightSide are the source of truth.
+			property["usage"] = (int) PropertyUsageFlags.Editor;
+		}
 		// Hide unused properties.
 		if (property["name"].AsStringName() == PropertyName.ConveyorAngle
 			|| property["name"].AsStringName() == PropertyName.ConveyorAutoScale
