@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 
 [Tool]
-public partial class ConveyorAssembly : Node3D
+public partial class ConveyorAssembly : Node3D, IComms
 {
 	#region Constants
 	#region Constants / Leg Stands
@@ -46,7 +46,169 @@ public partial class ConveyorAssembly : Node3D
 	private Transform3D legStandsTransformPrev;
 
 	#region Fields / Exported properties
-	[ExportGroup("Conveyor", "Conveyor")]
+	[ExportGroup("Conveyor")]
+	// This section is for properties proxied to the conveyor parts.
+	[ExportSubgroup("Comms")]
+	[Export]
+	public bool EnableComms {
+		get
+		{
+			// We're going to assume that the first child is a conveyor part.
+			// This could be improved to be more robust, but should work most of the time.
+			Node conveyor = conveyors?.GetChildOrNull<Node>(0);
+			if (IsConveyor(conveyor))
+			{
+				return (conveyor as IComms).EnableComms;
+			}
+			// If conveyor is null, it's more likely because `conveyors` isn't available yet.
+			return false;
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node conveyor in conveyors.GetChildren())
+			{
+				if (IsConveyor(conveyor))
+				{
+					(conveyor as IComms).EnableComms = value;
+				}
+			}
+		}
+	}
+
+	[Export]
+	public string Tag {
+		get
+		{
+			Node conveyor = conveyors?.GetChildOrNull<Node>(0);
+			if (IsConveyor(conveyor))
+			{
+				return (conveyor as IComms).Tag;
+			}
+			return null;
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node conveyor in conveyors.GetChildren())
+			{
+				if (IsConveyor(conveyor))
+				{
+					(conveyor as IComms).Tag = value;
+				}
+			}
+		}
+	}
+
+	[Export]
+	public int UpdateRate {
+		get
+		{
+			Node conveyor = conveyors?.GetChildOrNull<Node>(0);
+			if (IsConveyor(conveyor))
+			{
+				return (conveyor as IComms).UpdateRate;
+			}
+			return 100;
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node conveyor in conveyors.GetChildren())
+			{
+				if (IsConveyor(conveyor))
+				{
+					(conveyor as IComms).UpdateRate = value;
+				}
+			}
+		}
+	}
+	[ExportSubgroup("BeltConveyor", "BeltConveyor")]
+	[Export]
+	public Color BeltConveyorBeltColor {
+		get
+		{
+			Node conveyor = conveyors?.GetChildOrNull<Node>(0);
+			return (conveyor as IBeltConveyor)?.BeltColor ?? new Color(1, 1, 1, 1);
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node node in conveyors.GetChildren())
+			{
+				if (node is IBeltConveyor conveyor)
+				{
+					conveyor.BeltColor = value;
+				}
+			}
+		}
+	}
+
+	[Export]
+	public IBeltConveyor.ConvTexture BeltConveyorBeltTexture {
+		get
+		{
+			Node conveyor = conveyors?.GetChildOrNull<Node>(0);
+			if (IsConveyor(conveyor))
+			{
+				return (conveyor as BeltConveyor)?.BeltTexture ?? IBeltConveyor.ConvTexture.Standard;
+			}
+			return IBeltConveyor.ConvTexture.Standard;
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node node in conveyors.GetChildren())
+			{
+				if (node is IBeltConveyor conveyor)
+				{
+					conveyor.BeltTexture = value;
+				}
+			}
+		}
+	}
+
+	[Export]
+	public float BeltConveyorSpeed {
+		get
+		{
+			IBeltConveyor conveyor = conveyors?.GetChildOrNull<IBeltConveyor>(0);
+			return conveyor?.Speed ?? 0.0f;
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node node in conveyors.GetChildren())
+			{
+				if (node is IBeltConveyor conveyor)
+				{
+					conveyor.Speed = value;
+				}
+			}
+		}
+	}
+
+	// TODO RollerConveyor properties
+
+	[ExportSubgroup("Conveyor Line", "Conveyor")]
 	[Export(PropertyHint.None, "radians_as_degrees")]
 	public float ConveyorAngle { get; set; } = 0f;
 	private float conveyorAnglePrev = 0f;
