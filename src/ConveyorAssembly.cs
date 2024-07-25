@@ -25,7 +25,10 @@ public partial class ConveyorAssembly : Node3D
 	{
 		get
 		{
-			_conveyors ??= GetNodeOrNull<Node3D>("Conveyors");
+			if (!IsInstanceValid(_conveyors))
+			{
+				_conveyors = GetNodeOrNull<Node3D>("Conveyors");
+			}
 			return _conveyors;
 		}
 		set

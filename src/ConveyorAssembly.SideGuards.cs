@@ -26,7 +26,6 @@ public partial class ConveyorAssembly : Node3D
 		if (side == null) {
 			return;
 		}
-		conveyors = IsInstanceValid(conveyors) ? conveyors : GetNodeOrNull<Node3D>("Conveyors");
 		if (conveyors != null) {
 			LockSidePosition(side, isRight);
 		}
