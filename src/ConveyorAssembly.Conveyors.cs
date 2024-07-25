@@ -105,7 +105,7 @@ public partial class ConveyorAssembly : Node3D
 	}
 
 	private static bool IsConveyor(Node node) {
-		return node as IConveyor != null || node as RollerConveyor != null || node as CurvedRollerConveyor != null;
+		return node as IConveyor != null || node as IBeltConveyor != null || node as IRollerConveyor != null;
 	}
 
 	protected virtual void ScaleConveyor(Node3D conveyor, float conveyorLength) {
