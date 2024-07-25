@@ -21,7 +21,19 @@ public partial class ConveyorAssembly : Node3D
 
 	#region Fields
 	#region Fields / Nodes
-	protected Node3D conveyors;
+	protected Node3D conveyors
+	{
+		get
+		{
+			_conveyors ??= GetNodeOrNull<Node3D>("Conveyors");
+			return _conveyors;
+		}
+		set
+		{
+			_conveyors = value;
+		}
+	}
+	private Node3D _conveyors;
 	private Node3D rightSide;
 	private Node3D leftSide;
 	protected Node3D legStands;
