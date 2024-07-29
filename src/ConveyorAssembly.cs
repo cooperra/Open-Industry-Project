@@ -420,15 +420,29 @@ public partial class ConveyorAssembly : Node3D, IComms
 	}
 
 	public override bool _PropertyCanRevert(StringName property) {
-		if (property == PropertyName.SideGuardsBothSides) {
-			return true;
-		}
-		return base._PropertyCanRevert(property);
+		return property == PropertyName.SideGuardsBothSides
+			|| property == PropertyName.UpdateRate
+			|| property == PropertyName.BeltConveyorBeltColor
+			|| property == PropertyName.BeltConveyorSpeed
+			|| property == PropertyName.RollerConveyorSpeed
+			|| base._PropertyCanRevert(property);
 	}
 
 	public override Variant _PropertyGetRevert(StringName property) {
 		if (property == PropertyName.SideGuardsBothSides) {
 			return true;
+		}
+		if (property == PropertyName.UpdateRate) {
+			return 100;
+		}
+		if (property == PropertyName.BeltConveyorBeltColor) {
+			return new Color(1, 1, 1, 1);
+		}
+		if (property == PropertyName.BeltConveyorSpeed) {
+			return -2.0f;
+		}
+		if (property == PropertyName.RollerConveyorSpeed) {
+			return -2.0f;
 		}
 		return base._PropertyGetRevert(property);
 	}
