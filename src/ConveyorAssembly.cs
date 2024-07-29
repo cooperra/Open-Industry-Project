@@ -46,8 +46,15 @@ public partial class ConveyorAssembly : Node3D, IComms
 	private Transform3D legStandsTransformPrev;
 
 	#region Fields / Exported properties
-	[ExportGroup("Conveyor")]
-	// This section is for properties proxied to the conveyor parts.
+	[ExportGroup("Conveyor", "Conveyor")]
+	[Export(PropertyHint.None, "radians_as_degrees")]
+	public float ConveyorAngle { get; set; } = 0f;
+	private float conveyorAnglePrev = 0f;
+
+	[Export]
+	public bool ConveyorAutoScale { get; set; } = true;
+
+	// This rest of this section is for properties proxied to the conveyor parts.
 	[ExportSubgroup("Comms")]
 	[Export]
 	public bool EnableComms {
@@ -252,14 +259,6 @@ public partial class ConveyorAssembly : Node3D, IComms
 			}
 		}
 	}
-
-	[ExportSubgroup("Conveyor Line", "Conveyor")]
-	[Export(PropertyHint.None, "radians_as_degrees")]
-	public float ConveyorAngle { get; set; } = 0f;
-	private float conveyorAnglePrev = 0f;
-
-	[Export]
-	public bool ConveyorAutoScale { get; set; } = true;
 
 	[ExportGroup("Side Guards", "SideGuards")]
 	[Export]
