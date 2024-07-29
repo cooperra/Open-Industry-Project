@@ -301,43 +301,47 @@ public partial class ConveyorAssembly : Node3D, IComms
 		get => _sideGuardsGaps;
 		set
 		{
-			// Workaround for faulty duplicate behavior in the editor.
-			// See issue #74918.
-			if (_sideGuardsGaps.Count == 0) {
-				// Assume that we're initializing for the first time.
-				// Any gaps we see in the new array possibly came from an original that this instance is a duplicate of.
-				// There's no way to know for sure.
-				// Make all the gaps unique to this instance to prevent editing the originals.
-				foreach (SideGuardGap gap in value)
-				{
-					if (gap == null)
-					{
-						_sideGuardsGaps.Add(null);
-					} else {
-						_sideGuardsGaps.Add(gap.Duplicate(true) as SideGuardGap);
-					}
-				}
-			} else {
-				// Unsubscribe from old gaps.
-				foreach (SideGuardGap gap in _sideGuardsGaps)
-				{
-					if (gap == null)
-					{
-						continue;
-					}
-					gap.Changed -= UpdateSides;
-				}
-				_sideGuardsGaps = value;
-			}
-			// Ensure that side guards update whenever this array or its contents change.
+			// Unsubscribe from previous gaps. They may be replaced with new ones.
 			foreach (SideGuardGap gap in _sideGuardsGaps)
 			{
 				if (gap == null)
 				{
+					// Shouldn't be possible since all nulls should have been replaced by instances.
 					continue;
 				}
+				gap.Changed -= UpdateSides;
+			}
+
+			// Workaround for faulty duplicate behavior in the editor.
+			// See issue #74918.
+			if (_sideGuardsGaps.Count == 0) {
+				// Assume that we're initializing for the first time.
+				foreach (SideGuardGap gap in value)
+				{
+					// Any gaps we see in the new array possibly came from an original that this instance is a duplicate of.
+					// There's no way to know for sure.
+					// Make all the gaps unique to this instance to prevent editing the originals.
+					_sideGuardsGaps.Add(gap?.Duplicate(true) as SideGuardGap);
+				}
+			} else {
+				// If we're not initializing, avoid making unnecessary duplicates.
+				_sideGuardsGaps = value;
+			}
+
+			// Replace null with a new gap so users don't have to do this by hand.
+			for (int i = 0; i < _sideGuardsGaps.Count; i++)
+			{
+				_sideGuardsGaps[i] ??= new SideGuardGap();
+			}
+
+			// Subscribe to ensure that side guards update whenever gaps change.
+			foreach (SideGuardGap gap in _sideGuardsGaps)
+			{
+				// null gaps shouldn't be possible since we just replaced them above.
 				gap.Changed += UpdateSides;
 			}
+
+			// Update side guards to account for added or removed gaps.
 			UpdateSides();
 		}
 	}
