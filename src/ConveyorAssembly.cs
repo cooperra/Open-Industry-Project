@@ -188,7 +188,7 @@ public partial class ConveyorAssembly : Node3D, IComms
 		get
 		{
 			IBeltConveyor conveyor = conveyors?.GetChildOrNull<IBeltConveyor>(0);
-			return conveyor?.Speed ?? 0.0f;
+			return conveyor?.Speed ?? -2.0f;
 		}
 		set
 		{
