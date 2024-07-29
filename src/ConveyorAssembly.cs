@@ -206,7 +206,51 @@ public partial class ConveyorAssembly : Node3D, IComms
 		}
 	}
 
-	// TODO RollerConveyor properties
+	[ExportSubgroup("RollerConveyor", "RollerConveyor")]
+	[Export]
+	public float RollerConveyorSpeed {
+		get
+		{
+			IRollerConveyor conveyor = conveyors?.GetChildOrNull<IRollerConveyor>(0);
+			return conveyor?.Speed ?? -2.0f;
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node node in conveyors.GetChildren())
+			{
+				if (node is IRollerConveyor conveyor)
+				{
+					conveyor.Speed = value;
+				}
+			}
+		}
+	}
+	[Export]
+	public float RollerConveyorSkewAngle {
+		get
+		{
+			RollerConveyor conveyor = conveyors?.GetChildOrNull<RollerConveyor>(0);
+			return conveyor?.SkewAngle ?? 0.0f;
+		}
+		set
+		{
+			if (conveyors == null)
+			{
+				return;
+			}
+			foreach (Node node in conveyors.GetChildren())
+			{
+				if (node is RollerConveyor conveyor)
+				{
+					conveyor.SkewAngle = value;
+				}
+			}
+		}
+	}
 
 	[ExportSubgroup("Conveyor Line", "Conveyor")]
 	[Export(PropertyHint.None, "radians_as_degrees")]
