@@ -19,7 +19,7 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 		}
 		// Hide unused properties.
 		else if (propertyName == PropertyName.ConveyorAngle
-			|| propertyName == PropertyName.ConveyorAutoScale
+			|| propertyName == PropertyName.ConveyorAutomaticLength
 			|| propertyName == PropertyName.SideGuardsLeftSide
 			|| propertyName == PropertyName.SideGuardsRightSide
 			|| propertyName == PropertyName.SideGuardsGaps
@@ -111,7 +111,7 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 	}
 
 	protected override void ScaleConveyor(Node3D conveyor, float conveyorLength) {
-		// ConveyorAutoScale and conveyorLength have no effect on curved conveyors.
+		// ConveyorAutomaticLength and conveyorLength have no effect on curved conveyors.
 		conveyor.Scale = new Vector3(this.Scale.X, 1f, this.Scale.Z);
 	}
 

@@ -57,9 +57,9 @@ public partial class ConveyorAssembly : Node3D
 	/**
 	 * Get the length of the conveyor line.
 	 *
-	 * If ConveyorAutoScale is enabled, this is the length required for the conveyor line, at its current angle, to span the assembly's x-axis one meter per unit of assembly x-scale.
+	 * If ConveyorAutomaticLength is enabled, this is the length required for the conveyor line, at its current angle, to span the assembly's x-axis one meter per unit of assembly x-scale.
 	 *
-	 * If ConveyorAutoScale is disabled, this is the sum of the lengths of all conveyors in the line.
+	 * If ConveyorAutomaticLength is disabled, this is the sum of the lengths of all conveyors in the line.
 	 * We assume that they're parallel and aligned end-to-end.
 	 *
 	 * @return The length of the conveyor line along its x-axis.
@@ -68,7 +68,7 @@ public partial class ConveyorAssembly : Node3D
 		if (conveyors == null) {
 			return this.Scale.X;
 		}
-		if (ConveyorAutoScale) {
+		if (ConveyorAutomaticLength) {
 			var cos = Mathf.Cos(conveyors.Basis.GetEuler().Z);
 			return this.Scale.X * 1 / (Mathf.Abs(cos) >= 0.01f ? cos : 0.01f);
 		}
@@ -92,7 +92,7 @@ public partial class ConveyorAssembly : Node3D
 	 * but currently, we just scale every conveyor to the length of the whole line and leave its position alone.
 	 *
 	 * @param conveyorLine The parent of the conveyors.
-	 * @param conveyorLineLength The length of the conveyor line to scale to. Ignored if ConveyorAutoScale is false.
+	 * @param conveyorLineLength The length of the conveyor line to scale to. Ignored if ConveyorAutomaticLength is false.
 	 */
 	private void ScaleConveyorLine(Node3D conveyorLine, float conveyorLineLength) {
 		foreach (Node child in conveyorLine.GetChildren()) {
@@ -109,7 +109,7 @@ public partial class ConveyorAssembly : Node3D
 	}
 
 	protected virtual void ScaleConveyor(Node3D conveyor, float conveyorLength) {
-		if (ConveyorAutoScale) {
+		if (ConveyorAutomaticLength) {
 			conveyor.Scale = new Vector3(conveyorLength, 1f, this.Scale.Z);
 		} else {
 			// Always scale width.

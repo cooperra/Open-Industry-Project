@@ -52,7 +52,7 @@ public partial class ConveyorAssembly : Node3D, IComms
 	private float conveyorAnglePrev = 0f;
 
 	[Export]
-	public bool ConveyorAutoScale { get; set; } = true;
+	public bool ConveyorAutomaticLength { get; set; } = true;
 
 	// This rest of this section is for properties proxied to the conveyor parts.
 	[ExportSubgroup("Comms")]
