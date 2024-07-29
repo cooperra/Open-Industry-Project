@@ -421,23 +421,27 @@ public partial class ConveyorAssembly : Node3D, IComms
 			property["usage"] = (int) PropertyUsageFlags.None;
 		}
 		// These only have an effect if EnableComms is true.
-		if (propertyName == PropertyName.UpdateRate || propertyName == PropertyName.Tag)
+		else if (propertyName == PropertyName.UpdateRate || propertyName == PropertyName.Tag)
 		{
 			property["usage"] = (int)(EnableComms ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
 		}
 		// Only show if a IBeltConveyor is present.
-		if (propertyName == PropertyName.BeltConveyorBeltColor
+		else if (propertyName == PropertyName.BeltConveyorBeltColor
 			|| propertyName == PropertyName.BeltConveyorBeltTexture
 			|| propertyName == PropertyName.BeltConveyorSpeed) {
 			property["usage"] = (int)(conveyors?.GetChildOrNull<IBeltConveyor>(0) != null ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
 		}
 		// Only show if a IRollerConveyor is present.
-		if (propertyName == PropertyName.RollerConveyorSpeed) {
+		else if (propertyName == PropertyName.RollerConveyorSpeed) {
 			property["usage"] = (int)(conveyors?.GetChildOrNull<IRollerConveyor>(0) != null ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
 		}
 		// Only show if a RollerConveyor is present. (CurvedRollerConveyors don't have skew angles.)
-		if (propertyName == PropertyName.RollerConveyorSkewAngle) {
+		else if (propertyName == PropertyName.RollerConveyorSkewAngle) {
 			property["usage"] = (int)(conveyors?.GetChildOrNull<RollerConveyor>(0) != null ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
+		}
+		else
+		{
+			base._ValidateProperty(property);
 		}
 	}
 

@@ -10,34 +10,40 @@ public partial class CurvedConveyorAssembly : ConveyorAssembly
 	}
 
 	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
+		string propertyName = property["name"].AsStringName();
+
 		// Show SideGuardsBothSides.
-		if (property["name"].AsStringName() == PropertyName.SideGuardsBothSides) {
+		if (propertyName == PropertyName.SideGuardsBothSides) {
 			// We don't want it stored. SideGuardsLeftSide and SideGuardsRightSide are the source of truth.
 			property["usage"] = (int) PropertyUsageFlags.Editor;
 		}
 		// Hide unused properties.
-		if (property["name"].AsStringName() == PropertyName.ConveyorAngle
-			|| property["name"].AsStringName() == PropertyName.ConveyorAutoScale
-			|| property["name"].AsStringName() == PropertyName.SideGuardsLeftSide
-			|| property["name"].AsStringName() == PropertyName.SideGuardsRightSide
-			|| property["name"].AsStringName() == PropertyName.SideGuardsGaps
-			|| property["name"].AsStringName() == PropertyName.AutoLegStandsIntervalLegsOffset) {
+		else if (propertyName == PropertyName.ConveyorAngle
+			|| propertyName == PropertyName.ConveyorAutoScale
+			|| propertyName == PropertyName.SideGuardsLeftSide
+			|| propertyName == PropertyName.SideGuardsRightSide
+			|| propertyName == PropertyName.SideGuardsGaps
+			|| propertyName == PropertyName.AutoLegStandsIntervalLegsOffset) {
 			property["usage"] = (int) PropertyUsageFlags.NoEditor;
 		}
 		// This is a hack to change the unit of AutoLegStandsIntervalLegsInterval to degrees in the inspector.
-		if (property["name"].AsStringName() == PropertyName.AutoLegStandsIntervalLegsInterval) {
+		else if (propertyName == PropertyName.AutoLegStandsIntervalLegsInterval) {
 			property["hint"] = (int) PropertyHint.Range;
 			property["hint_string"] = "5,90,1,degrees";
 		}
 		// This is a hack to change the unit of AutoLegStandsMarginEnds to degrees in the inspector.
-		if (property["name"].AsStringName() == PropertyName.AutoLegStandsMarginEnds) {
+		else if (propertyName == PropertyName.AutoLegStandsMarginEnds) {
 			property["hint"] = (int) PropertyHint.Range;
 			property["hint_string"] = "0,90,1,degrees";
 		}
 		// This is a hack to change the unit of AutoLegStandsMarginEndLegs to degrees in the inspector.
-		if (property["name"].AsStringName() == PropertyName.AutoLegStandsMarginEndLegs) {
+		else if (propertyName == PropertyName.AutoLegStandsMarginEndLegs) {
 			property["hint"] = (int) PropertyHint.Range;
 			property["hint_string"] = "0,90,1,degrees";
+		}
+		else
+		{
+			base._ValidateProperty(property);
 		}
 	}
 
