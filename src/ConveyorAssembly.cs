@@ -76,6 +76,7 @@ public partial class ConveyorAssembly : Node3D, IComms
 					(conveyor as IComms).EnableComms = value;
 				}
 			}
+			NotifyPropertyListChanged();
 		}
 	}
 
@@ -412,10 +413,31 @@ public partial class ConveyorAssembly : Node3D, IComms
 
 	#region Fields / Property method overrides
 	public override void _ValidateProperty(Godot.Collections.Dictionary property) {
+		string propertyName = property["name"].AsStringName();
+
 		// Hide this property as it's only useful for CurvedConveyorAssembly; it clutters the UI otherwise.
-		if (property["name"].AsStringName() == PropertyName.SideGuardsBothSides) {
+		if (propertyName == PropertyName.SideGuardsBothSides) {
 			// We don't even want it stored. SideGuardsLeftSide and SideGuardsRightSide are the source of truth.
 			property["usage"] = (int) PropertyUsageFlags.None;
+		}
+		// These only have an effect if EnableComms is true.
+		if (propertyName == PropertyName.UpdateRate || propertyName == PropertyName.Tag)
+		{
+			property["usage"] = (int)(EnableComms ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
+		}
+		// Only show if a IBeltConveyor is present.
+		if (propertyName == PropertyName.BeltConveyorBeltColor
+			|| propertyName == PropertyName.BeltConveyorBeltTexture
+			|| propertyName == PropertyName.BeltConveyorSpeed) {
+			property["usage"] = (int)(conveyors?.GetChildOrNull<IBeltConveyor>(0) != null ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
+		}
+		// Only show if a IRollerConveyor is present.
+		if (propertyName == PropertyName.RollerConveyorSpeed) {
+			property["usage"] = (int)(conveyors?.GetChildOrNull<IRollerConveyor>(0) != null ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
+		}
+		// Only show if a RollerConveyor is present. (CurvedRollerConveyors don't have skew angles.)
+		if (propertyName == PropertyName.RollerConveyorSkewAngle) {
+			property["usage"] = (int)(conveyors?.GetChildOrNull<RollerConveyor>(0) != null ? PropertyUsageFlags.Default : PropertyUsageFlags.NoEditor);
 		}
 	}
 
