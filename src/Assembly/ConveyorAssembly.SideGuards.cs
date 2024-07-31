@@ -283,40 +283,6 @@ public partial class ConveyorAssembly : Node3D
 		// This is a good way to do it because we know the conveyors node exists if we're instancing guards.
 		guard.Owner = conveyors?.Owner;
 	}
-	// TODO move to ConveyorAssembly.Conveyors.cs
-	/**
-	 * Get the extents of all conveyors in the assembly.
-	 *
-	 * The extents are the (front, rear) X positions of each conveyor.
-	 * They're used to determine where to place side guards.
-	 *
-	 * @return A list of (front, rear) extents of each conveyor.
-	 */
-	private List<(float, float)> GetAllConveyorExtents() {
-		// Assume straight assembly.
-		// Assume all conveyors are in the same reference frame, straight, aligned end-to-end, and parallel to the x-axis of that reference frame.
-		// We will use the `conveyors` node's children, but this would work for any list that meets the above assumptions.
-
-		// Additional thought: it would be neat to return extent positions or something instead, that way we could take any arbitrary arrangement of conveyors. As long as the gaps could still cut into it, it could work.
-		// This approach would also bring us closer to automatic leg stands per conveyor instead of per conveyor line.
-
-		List<(float, float)> results = new();
-		if (conveyors == null) {
-			return results;
-		}
-		foreach (Node3D node3D in conveyors.GetChildren()) {
-			if (IsConveyor(node3D)) {
-				// Assume conveyor length equal to X scale.
-				// (Don't account for the end caps; they reach beyond the extents.)
-				// This assumption is convenient because SideGuards' end caps overreach the same amount.
-				float length = node3D.Scale.X;
-				float extentFront = node3D.Position.X - length / 2f;
-				float extentRear = node3D.Position.X + length / 2f;
-				results.Add((extentFront, extentRear));
-			}
-		}
-		return results;
-	}
 	#endregion SideGuards / Auto SideGuards
 	#endregion SideGuards
 }
