@@ -1,6 +1,6 @@
 [gd_scene load_steps=21 format=4 uid="uid://dvpvhht5hn7ww"]
 
-[ext_resource type="Script" path="res://src/CurvedConveyorAssembly.cs" id="1_tp652"]
+[ext_resource type="Script" path="res://src/Assembly/CurvedConveyorAssembly.cs" id="1_tp652"]
 [ext_resource type="PackedScene" uid="uid://b2hnylsj67c5m" path="res://parts/ConveyorLegCBC.tscn" id="2_0xmjf"]
 [ext_resource type="PackedScene" uid="uid://6vu4cx2v1ltg" path="res://src/Conveyor/CurvedBeltConveyor.tscn" id="3_a54t1"]
 [ext_resource type="PackedScene" uid="uid://b567tts2001h8" path="res://parts/SideGuardCBC.tscn" id="4_3p6hp"]
