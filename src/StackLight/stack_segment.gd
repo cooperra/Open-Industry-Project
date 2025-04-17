@@ -3,7 +3,7 @@ extends Node3D
 
 @export var segment_data: StackSegmentData:
 	set(value):
-		if segment_data:
+		if is_instance_valid(segment_data):
 			segment_data.active_changed.disconnect(_on_active_changed)
 			segment_data.color_changed.disconnect(_on_color_changed)
 		
